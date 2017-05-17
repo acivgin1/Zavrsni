@@ -192,6 +192,9 @@ capacity = min_after_dequeue + 3 * batch_size
 image, label = tf.train.shuffle_batch([image, label], batch_size=batch_size, capacity=capacity,
                                       min_after_dequeue=min_after_dequeue)
 
+t_image, t_label = tf.train.shuffle_batch([t_image, t_label], batch_size=batch_size, capacity=capacity,
+                                      min_after_dequeue=min_after_dequeue)
+
 x, y = image, label
 
 with tf.Session() as sess:
