@@ -75,13 +75,13 @@ def nn_layer(input_tensor, input_dim, output_dim, layer_name, act = tf.nn.relu):
 def conv_layer(input_tensor, filter_height, filter_width, in_channels, out_channels, strides, padding, layer_name, act = tf.nn.relu):
     with tf.name_scope(layer_name):
         with tf.name_scope('window'):
-            filter = tf.Variable(tf.random_normal([filter_height, filter_width, in_channels, out_channels]))
-            variable_summaries(filter)
+            conv_filter = tf.Variable(tf.random_normal([filter_height, filter_width, in_channels, out_channels]))
+            variable_summaries(conv_filter)
         with tf.name_scope('biases'):
             biases = tf.Variable(tf.random_normal( [out_channels] ))
             variable_summaries(biases)
         with tf.name_scope('W_conv_x_plus_b'):
-            convolution = tf.nn.conv2d(input_tensor, filter, strides = strides, padding = padding) + biases
+            convolution = tf.nn.conv2d(input_tensor, conv_filter, strides = strides, padding = padding) + biases
             tf.summary.histogram('convolution', convolution)
         activatedConv = act(convolution, name = 'activated_convolution')
         tf.summary.histogram('activated_convolution', activatedConv)
@@ -96,17 +96,18 @@ def max_pool_layer(input_tensor, ksize, strides, padding, layer_name):
 def convolutional_neural_network(data):
     data = tf.reshape(data, shape = [-1, 86, 86, 1], name = 'input' )
 
-    conv1 = conv_layer(data, filter_height = 5, filter_width = 5, in_channels = 1, out_channels = 8, strides = [1,1,1,1], padding = 'SAME', layer_name = 'conv1')
+    #conv1 = conv_layer(data, filter_height = 5, filter_width = 5, in_channels = 1, out_channels = 8, strides = [1,1,1,1], padding = 'SAME', layer_name = 'conv1')
+    conv1 = conv_layer(data, 5, 5, 1, 8, [1, 1, 1, 1], 'SAME', 'conv1')
     conv1 = max_pool_layer(conv1, ksize = [1, 2, 2, 1], strides = [1, 2, 2, 1], padding = 'SAME', layer_name = 'max_pool1')
 
-    conv2 = conv_layer(conv1, 5, 5, 8, 16, [1, 1, 1, 1], 'SAME', 'conv2')
+    conv2 = conv_layer(conv1, 5, 5, 8, 32, [1, 1, 1, 1], 'SAME', 'conv2')
     conv2 = max_pool_layer(conv2, ksize = [1, 2, 2, 1], strides = [1, 2, 2, 1], padding = 'SAME', layer_name = 'max_pool2')
 
-    #conv3 = conv_layer(conv2, 5, 5, 64, 128, [1,1,1,1], 'SAME', 'conv2')
-    #conv3 = max_pool_layer(conv3, ksize = [1, 2, 2, 1], strides = [1, 2, 2, 1], padding = 'SAME', layer_name = 'max_pool2')
+    conv3 = conv_layer(conv2, 5, 5, 32, 16, [1,1,1,1], 'SAME', 'conv3')
+    conv3 = max_pool_layer(conv3, ksize = [1, 2, 2, 1], strides = [1, 2, 2, 1], padding = 'SAME', layer_name = 'max_pool3')
 
-    fc1 = tf.reshape(conv2, shape = [-1, 22*22*16], name = 'conv2_maxpool3' )
-    fc1 = nn_layer(fc1, 22*22*16, 128, 'fully_connected1')
+    fc1 = tf.reshape(conv3, shape = [-1, 11*11*16], name = 'conv2_maxpool3' )
+    fc1 = nn_layer(fc1, 11*11*16, 128, 'fully_connected1')
     #fc1 = tf.nn.dropout(fc1, 0.85)
 
     #fc2 = nn_layer(fc1, 1024, 128, 'fully_connected2')
