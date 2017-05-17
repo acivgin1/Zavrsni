@@ -5,8 +5,8 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets("/tmp/data", one_hot=True)
+#from tensorflow.examples.tutorials.mnist import input_data
+#mnist = input_data.read_data_sets("/tmp/data", one_hot=True)
 
 
 
@@ -40,7 +40,7 @@ def read_images_from_disk(input_queue):
     return example, label
 
 
-n_classes = 10
+n_classes = 47
 batch_size = 64
 
 x = tf.placeholder(tf.float32, [None, 28*28])
@@ -94,7 +94,7 @@ def max_pool_layer(input_tensor, ksize, strides, padding, layer_name):
         return max_pool
 
 def convolutional_neural_network(data):
-    data = tf.reshape(data, shape = [-1, 28, 28, 1], name = 'input' )
+    data = tf.reshape(data, shape = [-1, 86, 86, 1], name = 'input' )
 
     conv1 = conv_layer(data, filter_height = 5, filter_width = 5, in_channels = 1, out_channels = 8, strides = [1,1,1,1], padding = 'SAME', layer_name = 'conv1')
     conv1 = max_pool_layer(conv1, ksize = [1, 2, 2, 1], strides = [1, 2, 2, 1], padding = 'SAME', layer_name = 'max_pool1')
@@ -105,9 +105,9 @@ def convolutional_neural_network(data):
     #conv3 = conv_layer(conv2, 5, 5, 64, 128, [1,1,1,1], 'SAME', 'conv2')
     #conv3 = max_pool_layer(conv3, ksize = [1, 2, 2, 1], strides = [1, 2, 2, 1], padding = 'SAME', layer_name = 'max_pool2')
 
-    fc1 = tf.reshape(conv2, shape = [-1, 7*7*16], name = 'conv2_maxpool3' )
-    fc1 = nn_layer(fc1, 7*7*16, 128, 'fully_connected1')
-    fc1 = tf.nn.dropout(fc1, 0.85)
+    fc1 = tf.reshape(conv2, shape = [-1, 22*22*16], name = 'conv2_maxpool3' )
+    fc1 = nn_layer(fc1, 22*22*16, 128, 'fully_connected1')
+    #fc1 = tf.nn.dropout(fc1, 0.85)
 
     #fc2 = nn_layer(fc1, 1024, 128, 'fully_connected2')
 
@@ -125,7 +125,7 @@ def convolutional_neural_network(data):
 
 
 
-'''with open('train1.txt', 'r') as train:
+with open('train1.txt', 'r') as train:
     train_lines = train.read().splitlines()
 
 
@@ -137,14 +137,14 @@ t_image_list, t_label_list = read_labeled_image_list('test1.txt')
 images = tf.convert_to_tensor(image_list, dtype=tf.string)
 t_images = tf.convert_to_tensor(t_image_list, dtype=tf.string)
 
-labels = tf.convert_to_tensor(label_list, dtype=tf.float)
-t_labels = tf.convert_to_tensor(t_label_list, dtype=tf.float)'''
+labels = tf.convert_to_tensor(label_list, dtype=tf.int32)
+t_labels = tf.convert_to_tensor(t_label_list, dtype=tf.int32)
 
 '''labels = sess.run(labels)
     for i in range(10000,10020):
         print(labels[i])
 sys.exit("Error message")'''
-'''
+
 hm_epochs = 15
 # Makes an input queue
 input_queue = tf.train.slice_input_producer([images, labels],
@@ -161,9 +161,9 @@ t_label = tf.one_hot(t_label, 47)
 
 image = tf.cast(image, tf.float32)
 image = tf.image.central_crop(image, .6875)
-image = tf.image.resize_images(image, [86, 86])'''
-
-'''with tf.Session() as sess:
+image = tf.image.resize_images(image, [86, 86])
+'''
+with tf.Session() as sess:
     sess.run(tf.local_variables_initializer())  #bitno
     coord = tf.train.Coordinator()
     threads = tf.train.start_queue_runners(sess = sess, coord = coord)          #bitno
@@ -179,7 +179,7 @@ image = tf.image.resize_images(image, [86, 86])'''
     coord.join(threads)
 sys.exit("Error message")'''
 
-'''
+
 t_image = tf.cast(t_image, tf.float32)
 t_image = tf.image.central_crop(t_image, .6875)
 t_image = tf.image.resize_images(t_image, [86, 86])
@@ -197,7 +197,7 @@ image, label = tf.train.shuffle_batch([image, label], batch_size=batch_size, cap
 t_image, t_label = tf.train.shuffle_batch([t_image, t_label], batch_size=batch_size, capacity=capacity,
                                       min_after_dequeue=min_after_dequeue)
 
-x, y = image, label'''
+x, y = image, label
 
 with tf.Session() as sess:
     #threads = tf.train.start_queue_runners(sess)
@@ -212,7 +212,7 @@ with tf.Session() as sess:
         tf.summary.scalar('cross_entropy', cost)
 
         with tf.name_scope('train'):
-            optimizer = tf.train.AdamOptimizer(epsilon = 0.1).minimize(cost)
+            optimizer = tf.train.AdamOptimizer().minimize(cost)
         with tf.name_scope('accuracy'):
             with tf.name_scope('correct_prediction'):
                 correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
@@ -223,23 +223,24 @@ with tf.Session() as sess:
 
     tf.global_variables_initializer().run()
     tf.local_variables_initializer().run()
-    #coord = tf.train.Coordinator()
-    #sess.run(tf.local_variables_initializer())  #bitno
-    #threads = tf.train.start_queue_runners(sess = sess, coord = coord)          #bitno
+    coord = tf.train.Coordinator()
+    sess.run(tf.local_variables_initializer())  #bitno
+    threads = tf.train.start_queue_runners(sess = sess, coord = coord)          #bitno
 
     saver = tf.train.Saver()
     merged = tf.summary.merge_all()
     train_writer = tf.summary.FileWriter('D:/train', sess.graph)
+    
     #converting t_image from Tensor to numpy ndarray, for use in eval function for feed dict
-    #t_image, t_label = sess.run([t_image, t_label])
+    t_image, t_label = sess.run([t_image, t_label])
+    
     hm_epochs = 10
     for epoch in range(hm_epochs):
         epoch_loss = 0
 
-        #n = len(train_lines)
-        n = int(mnist.train.num_examples/batch_size)
-        print(n)
-        #n = int(n/batch_size)
+        n = len(train_lines)
+        #n = int(mnist.train.num_examples/batch_size)
+        n = int(n/batch_size)
         #print(n)
         for i in range(n):
             '''if i == 0:
@@ -249,13 +250,15 @@ with tf.Session() as sess:
                 np.savetxt(output, _prediction, delimiter=",")
         '''
         #print(y)
-            epoch_x, epoch_y = mnist.train.next_batch(batch_size)
+            #epoch_x, epoch_y = mnist.train.next_batch(batch_size)
             if i % 10 == 0:
-                summary, _, c = sess.run([merged, optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
+                summary, _, c = sess.run([merged, optimizer, cost])
+                #summary, _, c = sess.run([merged, optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
                 train_writer.add_summary(summary, epoch * n + i)
                 #break
             else:
-                _, c = sess.run([optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
+                _, c = sess.run([optimizer, cost])
+                #_, c = sess.run([optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
             epoch_loss += c
 
         ts = time.time()
@@ -266,8 +269,8 @@ with tf.Session() as sess:
 
         #correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
         #accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
-        test_accuracy = train_accuracy.eval({x:mnist.test.images, y:mnist.test.labels})
-        #test_accuracy = train_accuracy.eval({x:t_image, y:t_label})
+        #test_accuracy = train_accuracy.eval({x:mnist.test.images, y:mnist.test.labels})
+        test_accuracy = train_accuracy.eval({x:t_image, y:t_label})
 
         print('Accuracy:', test_accuracy)
 
