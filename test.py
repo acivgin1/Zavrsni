@@ -223,11 +223,15 @@ with tf.Session() as sess:
 
     tf.global_variables_initializer().run()
     tf.local_variables_initializer().run()
+    
+    coord = tf.train.Coordinator()
     #sess.run(tf.local_variables_initializer())  #bitno
-    tf.train.start_queue_runners(sess)          #bitno
+    threads = tf.train.start_queue_runners(sess = sess, coord = coord)          #bitno
     
     saver = tf.train.Saver()
-
+    
+    #converting t_image from Tensor to numpy ndarray, for use in eval function for feed dict
+    t_image, t_label = sess.run([t_image, t_label])
     
     for epoch in range(hm_epochs):
         epoch_loss = 0
@@ -252,7 +256,10 @@ with tf.Session() as sess:
         
         print('Epoch', epoch, 'completed out of', hm_epochs,'loss:', epoch_loss)
         with tf.name_scope('test_accuracy'):
-            t_image, t_label = sess.run([t_image, t_label])
+            
             test_accuracy = train_accuracy.eval({x:t_image, y:t_label})
             print(type(test_accuracy))
         print('Accuracy:', test_accuracy)
+        
+    coord.request_stop()
+    coord.join(threads)
