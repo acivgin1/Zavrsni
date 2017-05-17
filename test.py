@@ -43,7 +43,7 @@ def read_images_from_disk(input_queue):
 n_classes = 47
 batch_size = 64
 
-x = tf.placeholder(tf.float32, [None, 28*28])
+x = tf.placeholder(tf.float32, [None, 86*86])
 y = tf.placeholder(tf.float32, [None, n_classes])
 
 def variable_summaries(var):
@@ -103,11 +103,12 @@ def convolutional_neural_network(data):
     conv2 = conv_layer(conv1, 5, 5, 8, 32, [1, 1, 1, 1], 'SAME', 'conv2')
     conv2 = max_pool_layer(conv2, ksize = [1, 2, 2, 1], strides = [1, 2, 2, 1], padding = 'SAME', layer_name = 'max_pool2')
 
-    conv3 = conv_layer(conv2, 5, 5, 32, 16, [1,1,1,1], 'SAME', 'conv3')
-    conv3 = max_pool_layer(conv3, ksize = [1, 2, 2, 1], strides = [1, 2, 2, 1], padding = 'SAME', layer_name = 'max_pool3')
-
-    fc1 = tf.reshape(conv3, shape = [-1, 11*11*16], name = 'conv2_maxpool3' )
-    fc1 = nn_layer(fc1, 11*11*16, 128, 'fully_connected1')
+    #conv3 = conv_layer(conv2, 5, 5, 32, 16, [1,1,1,1], 'SAME', 'conv3')
+    #conv3 = max_pool_layer(conv3, ksize = [1, 2, 2, 1], strides = [1, 2, 2, 1], padding = 'SAME', layer_name = 'max_pool3')
+    
+    shape_dim = 22*22*32
+    fc1 = tf.reshape(conv2, shape = [-1, shape_dim], name = 'conv2_maxpool3' )
+    fc1 = nn_layer(fc1, shape_dim, 128, 'fully_connected1')
     #fc1 = tf.nn.dropout(fc1, 0.85)
 
     #fc2 = nn_layer(fc1, 1024, 128, 'fully_connected2')
@@ -161,9 +162,9 @@ label = tf.one_hot(label, 47)
 t_label = tf.one_hot(t_label, 47)
 
 image = tf.cast(image, tf.float32)
-image = tf.image.central_crop(image, .6875)
-image = tf.image.resize_images(image, [86, 86])
-'''
+image = tf.image.central_crop(image, .8125)
+image = tf.image.resize_images(image, [52, 52])
+
 with tf.Session() as sess:
     sess.run(tf.local_variables_initializer())  #bitno
     coord = tf.train.Coordinator()
@@ -178,11 +179,11 @@ with tf.Session() as sess:
     
     coord.request_stop()
     coord.join(threads)
-sys.exit("Error message")'''
+sys.exit("Error message")
 
 
 t_image = tf.cast(t_image, tf.float32)
-t_image = tf.image.central_crop(t_image, .6875)
+t_image = tf.image.central_crop(t_image, .8125)
 t_image = tf.image.resize_images(t_image, [86, 86])
 
 # Optional Image and Label Batching
