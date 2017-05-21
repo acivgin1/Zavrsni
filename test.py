@@ -184,7 +184,7 @@ sys.exit("Error message")
 
 t_image = tf.cast(t_image, tf.float32)
 t_image = tf.image.central_crop(t_image, .8125)
-t_image = tf.image.resize_images(t_image, [86, 86])
+t_image = tf.image.resize_images(t_image, [52, 52])
 
 # Optional Image and Label Batching
 #image_batch, label_batch = tf.train.batch([image, label],
