@@ -224,13 +224,13 @@ with tf.Session() as sess:
             tf.summary.scalar('train_accuracy', train_accuracy)
 
     saver = tf.train.Saver()
-    if os.path.isfile("D:/train/saves/model.ckpt"):
+    if os.path.isfile("D:/train/saves/model.ckpt.meta"):
         saver.restore(sess, "D:/train/saves/model.ckpt")
         print("Model restored.")
     else:
         print("Previous save missing")
+        tf.global_variables_initializer().run()
 
-    tf.global_variables_initializer().run()
     tf.local_variables_initializer().run()
     coord = tf.train.Coordinator()
     sess.run(tf.local_variables_initializer())  #bitno
