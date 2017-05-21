@@ -4,11 +4,6 @@ Created on Sun May 21 17:03:59 2017
 
 @author: Amar Civgin
 """
-
-'''
-summary definition and network architecture
-'''
-
 import tensorflow as tf
 
 def variable_summaries(var):
@@ -58,4 +53,4 @@ def max_pool_layer(input_tensor, ksize, strides, padding, layer_name):
         tf.summary.histogram('max_pool', max_pool)
         return max_pool
 
-print('Successfully imported tfHelperFunctions')
+print('Successfully imported tfHelperFunctions.')

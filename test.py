@@ -1,102 +1,29 @@
 import tensorflow as tf
 import datetime
 import time
-import sys
-import numpy as np
-import matplotlib.pyplot as plt
 import os.path
 
-from tfHelperFunctions import nn_layer
 from tfHelperFunctions import conv_layer
 from tfHelperFunctions import max_pool_layer
+from tfHelperFunctions import nn_layer
 from tfHelperFunctions import variable_summaries
+from tfLoader import loader
+
+#import sys
+#import numpy as np
+#import matplotlib.pyplot as plt
 
 #from tensorflow.examples.tutorials.mnist import input_data
 #mnist = input_data.read_data_sets("/tmp/data", one_hot=True)
 
-def read_labeled_image_list(image_list_file):
-    """Reads a .txt file containing pathes and labeles
-    Args:
-       image_list_file: a .txt file with one /path/to/image per line
-       label: optionally, if set label will be pasted after each line
-    Returns:
-       List with all filenames in file image_list_file
-    """
-    f = open(image_list_file, 'r')
-    filenames = []
-    labels = []
-    for line in f:
-        filename, label = line[:-1].split('#')
-        filenames.append(filename)
-        labels.append(int(label))
-    return filenames, labels
-
-def read_images_from_disk(input_queue):
-    """Consumes a single filename and label as a ' '-delimited string.
-    Args:
-        filename_and_label_tensor: A scalar string tensor.
-    Returns:
-        Two tensors: the decoded image, and the string label.
-    """
-    label = input_queue[1]
-    file_contents = tf.read_file(input_queue[0])
-    example = tf.image.decode_png(file_contents, channels=1)
-    return example, label
-
 n_classes = 10
 batch_size = 64
+hm_epochs = 10
 
 # placeholders used only when loading non Tensor data, like in the mnist example
 # x = tf.placeholder(tf.float32, [None, 86*86])
 # y = tf.placeholder(tf.float32, [None, n_classes])
-'''
-def variable_summaries(var):
-    with tf.name_scope('summaries'):
-        mean = tf.reduce_mean(var)
-        tf.summary.scalar('mean', mean)
-        with tf.name_scope('stddev'):
-            stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
-        tf.summary.scalar('stddev', stddev)
-        tf.summary.scalar('max', tf.reduce_max(var))
-        tf.summary.scalar('min', tf.reduce_min(var))
-        tf.summary.histogram('histogram', var)
 
-def nn_layer(input_tensor, input_dim, output_dim, layer_name, act = tf.nn.relu):
-    with tf.name_scope(layer_name):
-        with tf.name_scope('weights'):
-            weights = tf.Variable(tf.random_normal( [input_dim, output_dim] ), name=layer_name+'weights')
-            variable_summaries(weights)
-        with tf.name_scope('biases'):
-            biases = tf.Variable(tf.random_normal( [output_dim] ), name=layer_name+'biases')
-            variable_summaries(biases)
-        with tf.name_scope('Wx_plus_b'):
-            preactivate = tf.matmul(input_tensor, weights) + biases
-            tf.summary.histogram('pre_activations', preactivate)
-        activations = act(preactivate, name = layer_name+'activations')
-        tf.summary.histogram('activations', activations)
-        return activations
-
-def conv_layer(input_tensor, filter_height, filter_width, in_channels, out_channels, strides, padding, layer_name, act = tf.nn.relu):
-    with tf.name_scope(layer_name):
-        with tf.name_scope('window'):
-            conv_filter = tf.Variable(tf.random_normal([filter_height, filter_width, in_channels, out_channels]), name=layer_name+'filter')
-            variable_summaries(conv_filter)
-        with tf.name_scope('biases'):
-            biases = tf.Variable(tf.random_normal( [out_channels] ), name=layer_name+'biases')
-            variable_summaries(biases)
-        with tf.name_scope('W_conv_x_plus_b'):
-            convolution = tf.nn.conv2d(input_tensor, conv_filter, strides = strides, padding = padding) + biases
-            tf.summary.histogram('convolution', convolution)
-        activatedConv = act(convolution, name = layer_name + 'activated_convolution')
-        tf.summary.histogram('activated_convolution', activatedConv)
-        return activatedConv
-
-def max_pool_layer(input_tensor, ksize, strides, padding, layer_name):
-    with tf.name_scope(layer_name):
-        max_pool = tf.nn.max_pool(input_tensor, ksize = ksize, strides = strides, padding = padding, name = layer_name + 'max_pooling')
-        tf.summary.histogram('max_pool', max_pool)
-        return max_pool
-'''
 def convolutional_neural_network(data):
     data = tf.reshape(data, shape = [-1, 52, 52, 1], name = 'input' )
 
@@ -128,79 +55,7 @@ def convolutional_neural_network(data):
         tf.summary.histogram('output', output)
     return output
 
-
-# Getting the number of samples
-with open('filename lists/train2.txt', 'r') as train:
-    train_lines = train.read().splitlines()
-
-# Reads pfathes of images together with their labels
-image_list, label_list = read_labeled_image_list('filename lists/train2.txt')
-t_image_list, t_label_list = read_labeled_image_list('filename lists/test2.txt')
-
-images = tf.convert_to_tensor(image_list, dtype=tf.string)
-t_images = tf.convert_to_tensor(t_image_list, dtype=tf.string)
-
-labels = tf.convert_to_tensor(label_list, dtype=tf.int32)
-t_labels = tf.convert_to_tensor(t_label_list, dtype=tf.int32)
-
-'''labels = sess.run(labels)
-    for i in range(10000,10020):
-        print(labels[i])
-sys.exit("Error message")'''
-
-hm_epochs = 15
-# Creating an input queue
-input_queue = tf.train.slice_input_producer([images, labels],
-                                            num_epochs=hm_epochs,
-                                            shuffle=True)
-t_input_queue = tf.train.slice_input_producer([t_images, t_labels],
-                                            shuffle=True)
-
-image, label = read_images_from_disk(input_queue)
-t_image, t_label = read_images_from_disk(t_input_queue)
-
-label = tf.one_hot(label, n_classes)
-t_label = tf.one_hot(t_label, n_classes)
-
-image = tf.cast(image, tf.float32)
-image = tf.image.central_crop(image, .8125)
-image = tf.image.resize_images(image, [52, 52])
-
-'''with tf.Session() as sess:
-    sess.run(tf.local_variables_initializer())  #bitno
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(sess = sess, coord = coord)          #bitno
-
-    image, label = sess.run([image, label])
-    
-    plt.imshow(image.squeeze(), cmap='gray')
-    plt.show()
-    print(image.shape)
-    
-    
-    coord.request_stop()
-    coord.join(threads)
-sys.exit("Error message")
-'''
-
-t_image = tf.cast(t_image, tf.float32)
-t_image = tf.image.central_crop(t_image, .8125)
-t_image = tf.image.resize_images(t_image, [52, 52])
-
-# Optional Image and Label Batching
-# image_batch, label_batch = tf.train.batch([image, label],
-#                                           batch_size=batch_size)
-
-min_after_dequeue = 10000
-capacity = min_after_dequeue + 3 * batch_size
-
-image, label = tf.train.shuffle_batch([image, label], batch_size=batch_size, capacity=capacity,
-                                      min_after_dequeue=min_after_dequeue)
-
-t_image, t_label = tf.train.shuffle_batch([t_image, t_label], batch_size=batch_size, capacity=capacity,
-                                      min_after_dequeue=min_after_dequeue)
-
-x, y = image, label
+x, y, t_image, t_label, train_lines = loader(n_classes, batch_size, hm_epochs)
 
 with tf.Session() as sess:
     prediction = convolutional_neural_network(x)
@@ -221,9 +76,9 @@ with tf.Session() as sess:
                 train_accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
             tf.summary.scalar('train_accuracy', train_accuracy)
 
-    saver = tf.train.Saver()
     if os.path.isfile("D:/train/current/saves/model.ckpt.meta"):
-        saver.restore(sess, "D:/train/current/saves/model.ckpt.meta")
+        saver = tf.train.Saver()
+        saver.restore(sess, "D:/train/current/saves/model.ckpt")
         print("Model restored.")
     else:
         print("Previous save missing...\nStarting with random values.")
@@ -241,7 +96,6 @@ with tf.Session() as sess:
     merged = tf.summary.merge_all()
     train_writer = tf.summary.FileWriter('D:/train/current', sess.graph)
 
-    hm_epochs = 10
     for epoch in range(hm_epochs):
         epoch_loss = 0
 
@@ -254,7 +108,7 @@ with tf.Session() as sess:
             if i % 10 == 0:
                 summary, _, c = sess.run([merged, optimizer, cost])
                 #summary, _, c = sess.run([merged, optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
-                train_writer.add_summary(summary, epoch * n + i)
+                train_writer.add_summary(summary, (epoch * n + i)/10)
             else:
                 _, c = sess.run([optimizer, cost])
                 #_, c = sess.run([optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
@@ -271,6 +125,18 @@ with tf.Session() as sess:
 
         print("Model saved in file: %s" % save_path)
         print('Epoch', epoch, 'completed out of', hm_epochs,'loss:', epoch_loss)
+
+        # Added output of current Confusion Matrix
+        confMatrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(prediction, 1), num_classes = n_classes)
+        confMatrix = confMatrix.eval({x:t_image, y:t_label})
+        with open('D:/train/current/confMatrix{}.txt'.format(epoch), 'w') as conf:
+            for line in confMatrix:
+                for x in line:
+                    conf.write('{:>3}'.format(x))
+                    print('{:>3}'.format(x), end='')
+                print('')
+                conf.write('\n')
+
         test_accuracy = train_accuracy.eval({x:t_image, y:t_label})
         print('Accuracy:', test_accuracy)
 
