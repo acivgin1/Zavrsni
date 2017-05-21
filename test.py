@@ -4,6 +4,7 @@ import time
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+import os.path
 
 #from tensorflow.examples.tutorials.mnist import input_data
 #mnist = input_data.read_data_sets("/tmp/data", one_hot=True)
@@ -60,36 +61,36 @@ def variable_summaries(var):
 def nn_layer(input_tensor, input_dim, output_dim, layer_name, act = tf.nn.relu):
     with tf.name_scope(layer_name):
         with tf.name_scope('weights'):
-            weights = tf.Variable(tf.random_normal( [input_dim, output_dim] ))
+            weights = tf.Variable(tf.random_normal( [input_dim, output_dim] ), name=layer_name+'weights')
             variable_summaries(weights)
         with tf.name_scope('biases'):
-            biases = tf.Variable(tf.random_normal( [output_dim] ))
+            biases = tf.Variable(tf.random_normal( [output_dim] ), name=layer_name+'biases')
             variable_summaries(biases)
         with tf.name_scope('Wx_plus_b'):
             preactivate = tf.matmul(input_tensor, weights) + biases
             tf.summary.histogram('pre_activations', preactivate)
-        activations = act(preactivate, name = 'activations')
+        activations = act(preactivate, name = layer_name+'activations')
         tf.summary.histogram('activations', activations)
         return activations
 
 def conv_layer(input_tensor, filter_height, filter_width, in_channels, out_channels, strides, padding, layer_name, act = tf.nn.relu):
     with tf.name_scope(layer_name):
         with tf.name_scope('window'):
-            conv_filter = tf.Variable(tf.random_normal([filter_height, filter_width, in_channels, out_channels]))
+            conv_filter = tf.Variable(tf.random_normal([filter_height, filter_width, in_channels, out_channels]), name=layer_name+'filter')
             variable_summaries(conv_filter)
         with tf.name_scope('biases'):
-            biases = tf.Variable(tf.random_normal( [out_channels] ))
+            biases = tf.Variable(tf.random_normal( [out_channels] ), name=layer_name+'biases')
             variable_summaries(biases)
         with tf.name_scope('W_conv_x_plus_b'):
             convolution = tf.nn.conv2d(input_tensor, conv_filter, strides = strides, padding = padding) + biases
             tf.summary.histogram('convolution', convolution)
-        activatedConv = act(convolution, name = 'activated_convolution')
+        activatedConv = act(convolution, name = layer_name + 'activated_convolution')
         tf.summary.histogram('activated_convolution', activatedConv)
         return activatedConv
 
 def max_pool_layer(input_tensor, ksize, strides, padding, layer_name):
     with tf.name_scope(layer_name):
-        max_pool = tf.nn.max_pool(input_tensor, ksize = ksize, strides = strides, padding = padding, name = 'max_pooling')
+        max_pool = tf.nn.max_pool(input_tensor, ksize = ksize, strides = strides, padding = padding, name = layer_name + 'max_pooling')
         tf.summary.histogram('max_pool', max_pool)
         return max_pool
 
@@ -115,10 +116,10 @@ def convolutional_neural_network(data):
 
     with tf.name_scope('output'):
         with tf.name_scope('output_weights'):
-            weights = tf.Variable(tf.random_normal( [128, n_classes] ))
+            weights = tf.Variable(tf.random_normal( [128, n_classes] ), name='output'+'weights')
             variable_summaries(weights)
         with tf.name_scope('output_biases'):
-            biases = tf.Variable(tf.random_normal( [n_classes] ))
+            biases = tf.Variable(tf.random_normal( [n_classes] ), name='output'+'biases')
             variable_summaries(biases)
         output = tf.matmul(fc1, weights) + biases
         tf.summary.histogram('output', output)
@@ -127,14 +128,14 @@ def convolutional_neural_network(data):
 
 
 
-with open('train2.txt', 'r') as train:
+with open('filename lists/train2.txt', 'r') as train:
     train_lines = train.read().splitlines()
 
 
 # Reads pfathes of images together with their labels
 
-image_list, label_list = read_labeled_image_list('train2.txt')
-t_image_list, t_label_list = read_labeled_image_list('test2.txt')
+image_list, label_list = read_labeled_image_list('filename lists/train2.txt')
+t_image_list, t_label_list = read_labeled_image_list('filename lists/test2.txt')
 
 images = tf.convert_to_tensor(image_list, dtype=tf.string)
 t_images = tf.convert_to_tensor(t_image_list, dtype=tf.string)
@@ -222,6 +223,12 @@ with tf.Session() as sess:
                 train_accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
             tf.summary.scalar('train_accuracy', train_accuracy)
 
+    saver = tf.train.Saver()
+    if os.path.isfile("D:/train/saves/model.ckpt"):
+        saver.restore(sess, "D:/train/saves/model.ckpt")
+        print("Model restored.")
+    else:
+        print("Previous save missing")
 
     tf.global_variables_initializer().run()
     tf.local_variables_initializer().run()
@@ -229,9 +236,10 @@ with tf.Session() as sess:
     sess.run(tf.local_variables_initializer())  #bitno
     threads = tf.train.start_queue_runners(sess = sess, coord = coord)          #bitno
 
-    saver = tf.train.Saver()
     merged = tf.summary.merge_all()
     train_writer = tf.summary.FileWriter('D:/train', sess.graph)
+    
+    
     
     #converting t_image from Tensor to numpy ndarray, for use in eval function for feed dict
     t_image, t_label = sess.run([t_image, t_label])
@@ -265,7 +273,11 @@ with tf.Session() as sess:
 
         ts = time.time()
         st = datetime.datetime.fromtimestamp(ts).strftime('%m-%d-%H-%M')
-        save_path = saver.save(sess, "D:/train/model"+st+".ckpt")
+        newpath = r'D:\train\saves' 
+        if not os.path.exists(newpath):
+            os.makedirs(newpath)
+        save_path = saver.save(sess, "D:/train/saves/model"+st+".ckpt")
+        saver.save(sess, "D:/train/saves/model.ckpt")
         print("Model saved in file: %s" % save_path)
         print('Epoch', epoch, 'completed out of', hm_epochs,'loss:', epoch_loss)
 
