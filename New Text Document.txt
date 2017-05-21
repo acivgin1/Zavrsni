@@ -4,3 +4,4 @@ prosiri na 15
 
 i vidi da li mreza radi ispravno
 
+povecaj size of batches

@@ -22,7 +22,7 @@ def read_labeled_image_list(image_list_file):
     filenames = []
     labels = []
     for line in f:
-        filename, label = line[:-1].split(' ')
+        filename, label = line[:-1].split('#')
         filenames.append(filename)
         labels.append(int(label))
     return filenames, labels
@@ -40,7 +40,7 @@ def read_images_from_disk(input_queue):
     return example, label
 
 
-n_classes = 47
+n_classes = 10
 batch_size = 64
 
 x = tf.placeholder(tf.float32, [None, 86*86])
@@ -94,7 +94,7 @@ def max_pool_layer(input_tensor, ksize, strides, padding, layer_name):
         return max_pool
 
 def convolutional_neural_network(data):
-    data = tf.reshape(data, shape = [-1, 86, 86, 1], name = 'input' )
+    data = tf.reshape(data, shape = [-1, 52, 52, 1], name = 'input' )
 
     #conv1 = conv_layer(data, filter_height = 5, filter_width = 5, in_channels = 1, out_channels = 8, strides = [1,1,1,1], padding = 'SAME', layer_name = 'conv1')
     conv1 = conv_layer(data, 5, 5, 1, 8, [1, 1, 1, 1], 'SAME', 'conv1')
@@ -106,7 +106,7 @@ def convolutional_neural_network(data):
     #conv3 = conv_layer(conv2, 5, 5, 32, 16, [1,1,1,1], 'SAME', 'conv3')
     #conv3 = max_pool_layer(conv3, ksize = [1, 2, 2, 1], strides = [1, 2, 2, 1], padding = 'SAME', layer_name = 'max_pool3')
     
-    shape_dim = 22*22*32
+    shape_dim = 13*13*32
     fc1 = tf.reshape(conv2, shape = [-1, shape_dim], name = 'conv2_maxpool3' )
     fc1 = nn_layer(fc1, shape_dim, 128, 'fully_connected1')
     #fc1 = tf.nn.dropout(fc1, 0.85)
@@ -127,14 +127,14 @@ def convolutional_neural_network(data):
 
 
 
-with open('train1.txt', 'r') as train:
+with open('train2.txt', 'r') as train:
     train_lines = train.read().splitlines()
 
 
 # Reads pfathes of images together with their labels
 
-image_list, label_list = read_labeled_image_list('train1.txt')
-t_image_list, t_label_list = read_labeled_image_list('test1.txt')
+image_list, label_list = read_labeled_image_list('train2.txt')
+t_image_list, t_label_list = read_labeled_image_list('test2.txt')
 
 images = tf.convert_to_tensor(image_list, dtype=tf.string)
 t_images = tf.convert_to_tensor(t_image_list, dtype=tf.string)
@@ -158,14 +158,14 @@ t_input_queue = tf.train.slice_input_producer([t_images, t_labels],
 image, label = read_images_from_disk(input_queue)
 t_image, t_label = read_images_from_disk(t_input_queue)
 
-label = tf.one_hot(label, 47)
-t_label = tf.one_hot(t_label, 47)
+label = tf.one_hot(label, n_classes)
+t_label = tf.one_hot(t_label, n_classes)
 
 image = tf.cast(image, tf.float32)
 image = tf.image.central_crop(image, .8125)
 image = tf.image.resize_images(image, [52, 52])
 
-with tf.Session() as sess:
+'''with tf.Session() as sess:
     sess.run(tf.local_variables_initializer())  #bitno
     coord = tf.train.Coordinator()
     threads = tf.train.start_queue_runners(sess = sess, coord = coord)          #bitno
@@ -180,7 +180,7 @@ with tf.Session() as sess:
     coord.request_stop()
     coord.join(threads)
 sys.exit("Error message")
-
+'''
 
 t_image = tf.cast(t_image, tf.float32)
 t_image = tf.image.central_crop(t_image, .8125)
