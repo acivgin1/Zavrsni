@@ -143,3 +143,4 @@ def main():
 
         coord.request_stop()
         coord.join(threads)
+main()
