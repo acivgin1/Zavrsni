@@ -6,9 +6,6 @@ Created on Wed May 17 12:38:41 2017
 """
 from random import shuffle
 
-
-
-
 with open('train.txt','r') as train, open('test.txt', 'r') as test:
     with open('train2.txt','w') as trainOutput, open('test2.txt','w') as testOutput:
         train_lines = []
@@ -25,16 +22,16 @@ with open('train.txt','r') as train, open('test.txt', 'r') as test:
         #shuffle(train_lines)
         #shuffle(test_lines)
 
-    '''with open('train2.txt','w') as trainOutput, open('test2.txt','w') as testOutput:
-        i = 0
-        for line in train_lines:
-            #if i == 20000:
-            #    break
-            trainOutput.write("%s\n" % line)
-            i=i+1
-        i = 0
-        for line in test_lines:
-            #if i == 1000:
-            #    break
-            testOutput.write("%s\n" % line)
-            i=i+1'''
+    # with open('train2.txt','w') as trainOutput, open('test2.txt','w') as testOutput:
+    #     i = 0
+    #     for line in train_lines:
+    #         #if i == 20000:
+    #         #    break
+    #         trainOutput.write("%s\n" % line)
+    #         i=i+1
+    #     i = 0
+    #     for line in test_lines:
+    #         #if i == 1000:
+    #         #    break
+    #         testOutput.write("%s\n" % line)
+    #         i=i+1

@@ -10,7 +10,7 @@ from zipfile import ZipFile
 
 filename = 'D:/by_merge.zip'
 with ZipFile(filename) as archive:
-    r=[x for x in archive.namelist() if (x.find('hsf_7') != -1 and not x.endswith('/') and not x.endswith('.mit'))]
-    with open('output.txt', 'w') as output:
+    r=[x for x in archive.namelist() if not x.endswith('/') and not x.endswith('.mit')]
+    with open('C:/Users/Amar Civgin/PycharmProjects/Zavrsni/filename lists/output.txt', 'w') as output:
         for item in r:
             output.write("D:/%s \n" % item)

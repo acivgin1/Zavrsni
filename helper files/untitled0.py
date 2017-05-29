@@ -4,33 +4,34 @@ Created on Wed May 17 12:38:41 2017
 
 @author: Amar Civgin
 """
+import sys
 
-with open('train.txt','r') as train, open('test.txt', 'r') as test:
-    n_train, n_test = (0,0)
-    n_train_classes, n_test_classes = ([], [])
+# with open('C:/Users/Amar Civgin/PycharmProjects/Zavrsni/filename lists/output.txt', 'r') as output:
+#     with open('C:/Users/Amar Civgin/PycharmProjects/Zavrsni/filename lists/output1.txt', 'w') as output1:
+#         n_classes = -1
+#         oldClassName = ''
+#         for line in output:
+#             currentClassName = line[12:14]
+#             if currentClassName != oldClassName:
+#                 oldClassName = currentClassName
+#                 n_classes = n_classes + 1
+#             output1.write('{} {}\n'.format(line.rstrip(), n_classes))
+
+with open('C:/Users/Amar Civgin/PycharmProjects/Zavrsni/filename lists/output1.txt', 'r') as output:
+    n_output = 0
+    n_output_classes = []
     old_y = 0
     i = 0
-    
-    for line in train:
+
+    for line in output:
         _, y = line[:-1].split(' ')
         i = i+1
-        n_train = n_train + 1
+        n_output = n_output + 1
         if old_y != int(y):
             old_y = int(y)
-            n_train_classes.append(i)
+            n_output_classes.append(i)
             i = 0
-            
-            
-    old_y = 0
-    i = 0
-    for line in test:
-        _, y = line[:-1].split(' ')
-        i = i+1
-        n_test = n_test + 1
-        if old_y != int(y):
-            old_y = int(y)
-            n_test_classes.append(i)
-            i = 0
-    print(n_train, n_test)
-    print(n_train_classes)
-    print(n_test_classes)
+
+    print(n_output)
+    print(min(n_output_classes))
+    print(n_output_classes)
