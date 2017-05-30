@@ -7,7 +7,7 @@ from tfHelperFunctions import conv_layer
 from tfHelperFunctions import max_pool_layer
 from tfHelperFunctions import nn_layer
 from tfHelperFunctions import variable_summaries
-from tfLoader import loader
+from tfLoader import tf_loader
 
 # import sys
 # import numpy as np
@@ -17,12 +17,12 @@ from tfLoader import loader
 # mnist = input_data.read_data_sets("/tmp/data", one_hot=True)
 
 n_classes = 10
-batch_size = 64
+batch_size = 128
 hm_epochs = 10
 
 # placeholders used only when loading non Tensor data, like in the mnist example
-# x = tf.placeholder(tf.float32, [None, 86*86])
-# y = tf.placeholder(tf.float32, [None, n_classes])
+x = tf.placeholder(tf.float32, [None, 52, 52, 1])
+y = tf.placeholder(tf.float32, [None, n_classes])
 
 
 def convolutional_neural_network(data):
@@ -58,14 +58,17 @@ def convolutional_neural_network(data):
 
 
 def main():
-    x, y, t_image, t_label, train_lines = loader(n_classes, batch_size, hm_epochs)
+    x, y, t_image, t_label, train_lines = tf_loader(n_classes, batch_size, hm_epochs)
+    #t_image, t_label = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=False)
+    #_, _, train_lines = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=True)
+
     with tf.Session() as sess:
         prediction = convolutional_neural_network(x)
 
         # defining name scopes for cost and accuracy to be written into the summary file
         with tf.name_scope('training'):
             with tf.name_scope('cross_entropy'):
-                cost = tf.reduce_mean( tf.nn.softmax_cross_entropy_with_logits(labels = y, logits = prediction) )
+                cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=prediction))
             tf.summary.scalar('cross_entropy', cost)
 
             with tf.name_scope('train'):
@@ -98,6 +101,16 @@ def main():
         train_writer = tf.summary.FileWriter('D:/train/current', sess.graph)
 
         confMatrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(prediction, 1), num_classes=n_classes)
+        confMatrixEval, test_accuracy = sess.run([confMatrix, accuracy], feed_dict={x: t_image, y: t_label})
+        with open('D:/train/current/confMatrix{}.txt'.format(5), 'w') as confMatrixOutput:
+            for line in confMatrixEval:
+                for word in line:
+                    confMatrixOutput.write('{:>4}'.format(word))
+                    print('{:>4}'.format(word), end='')
+                print('')
+                confMatrixOutput.write('\n')
+        # Print out the current test accuracy
+        print('Accuracy:', test_accuracy)
 
         for epoch in range(hm_epochs):
             epoch_loss = 0
@@ -108,6 +121,7 @@ def main():
 
             for i in range(n):
                 # epoch_x, epoch_y = mnist.train.next_batch(batch_size)
+                # epoch_x, epoch_y, _ = tf_loader('D:/by_merge.zip', n_classes, batch_size, load_train=True, current=i*batch_size)
                 if i % 10 == 0:
                     summary, _, c = sess.run([merged, optimizer, cost])
                     # summary, _, c = sess.run([merged, optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
@@ -143,3 +157,5 @@ def main():
 
         coord.request_stop()
         coord.join(threads)
+
+main()
