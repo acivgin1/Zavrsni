@@ -8,6 +8,7 @@ from tfHelperFunctions import max_pool_layer
 from tfHelperFunctions import nn_layer
 from tfHelperFunctions import variable_summaries
 from tfLoader import tf_loader
+from tfLoader import zip_loader
 
 # import sys
 # import numpy as np
@@ -16,13 +17,13 @@ from tfLoader import tf_loader
 # from tensorflow.examples.tutorials.mnist import input_data
 # mnist = input_data.read_data_sets("/tmp/data", one_hot=True)
 
-n_classes = 10
-batch_size = 128
+n_classes = 47
+batch_size = 2048
 hm_epochs = 10
 
 # placeholders used only when loading non Tensor data, like in the mnist example
-x = tf.placeholder(tf.float32, [None, 52, 52, 1])
-y = tf.placeholder(tf.float32, [None, n_classes])
+# x = tf.placeholder(tf.float32, [None, 52, 52, 1])
+# y = tf.placeholder(tf.float32, [None, n_classes])
 
 
 def convolutional_neural_network(data):
@@ -58,9 +59,9 @@ def convolutional_neural_network(data):
 
 
 def main():
-    x, y, t_image, t_label, train_lines = tf_loader(n_classes, batch_size, hm_epochs)
-    #t_image, t_label = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=False)
-    #_, _, train_lines = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=True)
+    x, y, train_lines = tf_loader(n_classes, batch_size, hm_epochs)
+    # t_image, t_label = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=False)
+    # _, _, train_lines = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=True)
 
     with tf.Session() as sess:
         prediction = convolutional_neural_network(x)
@@ -95,22 +96,24 @@ def main():
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)          # bitno
 
         # converting t_image from Tensor to numpy ndarray, for use in eval function for feed dict
-        t_image, t_label = sess.run([t_image, t_label])
+        # t_image, t_label = sess.run([t_image, t_label])
+        # importing test data using zip loader
+        t_image, t_label = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=False)
 
         merged = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter('D:/train/current', sess.graph)
 
-        confMatrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(prediction, 1), num_classes=n_classes)
-        confMatrixEval, test_accuracy = sess.run([confMatrix, accuracy], feed_dict={x: t_image, y: t_label})
-        with open('D:/train/current/confMatrix{}.txt'.format(5), 'w') as confMatrixOutput:
-            for line in confMatrixEval:
-                for word in line:
-                    confMatrixOutput.write('{:>4}'.format(word))
-                    print('{:>4}'.format(word), end='')
-                print('')
-                confMatrixOutput.write('\n')
-        # Print out the current test accuracy
-        print('Accuracy:', test_accuracy)
+        # conf_matrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(prediction, 1), num_classes=n_classes)
+        # conf_matrix_eval, test_accuracy = sess.run([conf_matrix, accuracy], feed_dict={x: t_image, y: t_label})
+        # with open('D:/train/current/confMatrix{}.txt'.format(5), 'w') as confMatrixOutput:
+        #     for line in conf_matrix_eval:
+        #         for word in line:
+        #             confMatrixOutput.write('{:>4}'.format(word))
+        #             print('{:>4}'.format(word), end='')
+        #         print('')
+        #         confMatrixOutput.write('\n')
+        # # Print out the current test accuracy
+        # print('Accuracy:', test_accuracy)
 
         for epoch in range(hm_epochs):
             epoch_loss = 0
@@ -121,7 +124,8 @@ def main():
 
             for i in range(n):
                 # epoch_x, epoch_y = mnist.train.next_batch(batch_size)
-                # epoch_x, epoch_y, _ = tf_loader('D:/by_merge.zip', n_classes, batch_size, load_train=True, current=i*batch_size)
+                # epoch_x, epoch_y, _ = tf_loader('D:/by_merge.zip', n_classes, batch_size, load_train=True, \
+                #     current=i*batch_size)
                 if i % 10 == 0:
                     summary, _, c = sess.run([merged, optimizer, cost])
                     # summary, _, c = sess.run([merged, optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
@@ -134,22 +138,23 @@ def main():
             # Creating saves after an epoch
             ts = time.time()
             st = datetime.datetime.fromtimestamp(ts).strftime('%m-%d-%H-%M')
-            newPath = 'D:/train/current/saves'
-            if not os.path.exists(newPath):
-                os.makedirs(newPath)
-            save_path = saver.save(sess, "D:/train/current/saves/model"+st+".ckpt")
-            saver.save(sess, "D:/train/current/saves/model.ckpt")
+            new_path = 'D:/train/current/saves'
+            if not os.path.exists(new_path):
+                os.makedirs(new_path)
+            save_path = saver.save(sess, new_path + "/model" + st + ".ckpt")
+            saver.save(sess, new_path + "/model.ckpt")
 
             print("Model saved in file: %s" % save_path)
             print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
 
             # Added output of current Confusion Matrix
-            confMatrixEval, test_accuracy = sess.run([confMatrix, accuracy], feed_dict={x: t_image, y: t_label})
+            conf_matrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(prediction, 1), num_classes=n_classes)
+            conf_matrix_eval, test_accuracy = sess.run([conf_matrix, accuracy], feed_dict={x: t_image, y: t_label})
             with open('D:/train/current/confMatrix{}.txt'.format(epoch), 'w') as confMatrixOutput:
-                for line in confMatrixEval:
+                for line in conf_matrix_eval:
                     for word in line:
-                        confMatrixOutput.write('{:>3}'.format(word))
-                        print('{:>3}'.format(word), end='')
+                        confMatrixOutput.write('{:>4}'.format(word))
+                        print('{:>4}'.format(word), end='')
                     print('')
                     confMatrixOutput.write('\n')
             # Print out the current test accuracy
