@@ -8,7 +8,6 @@ from tfHelperFunctions import max_pool_layer
 from tfHelperFunctions import nn_layer
 from tfHelperFunctions import variable_summaries
 from tfLoader import tf_loader
-from mergedTimeline import TimeLiner
 
 from tensorflow.python.client import timeline
 
@@ -103,9 +102,6 @@ def main():
         merged = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter('D:/train/current', sess.graph)
 
-        # probably will have to be removed
-        tf.get_default_graph().finalize()
-
         for epoch in range(hm_epochs):
             epoch_loss = 0
 
@@ -115,7 +111,6 @@ def main():
 
             run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
             run_metadata = tf.RunMetadata()
-            many_runs_timeline = TimeLiner()
 
             for i in range(n):
                 # epoch_x, epoch_y = mnist.train.next_batch(batch_size)
@@ -128,10 +123,9 @@ def main():
 
                     # Create the Timeline object, and write it to a json
                     tl = timeline.Timeline(run_metadata.step_stats)
-                    chrome_trace = tl.generate_chrome_trace_format()
-
-                    many_runs_timeline.update_timeline(chrome_trace)
-                    many_runs_timeline.save('timeline_merged_%d_runs.json' % i)
+                    ctf = tl.generate_chrome_trace_format()
+                    with open('timeline' + str(i) + '.json', 'w') as f:
+                        f.write(ctf)
                 else:
                     _, c = sess.run([optimizer, cost])
                     # _, c = sess.run([optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})

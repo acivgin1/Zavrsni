@@ -103,4 +103,8 @@ ENV/
 
 # timeline profiler
 .json
+
+# tfrecord
+.tfrecord
+
 # End of https://www.gitignore.io/api/python
