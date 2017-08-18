@@ -8,7 +8,9 @@ from tfHelperFunctions import max_pool_layer
 from tfHelperFunctions import nn_layer
 from tfHelperFunctions import variable_summaries
 from tfLoader import tf_loader
-from tfLoader import zip_loader
+from mergedTimeline import TimeLiner
+
+from tensorflow.python.client import timeline
 
 # import sys
 # import numpy as np
@@ -59,7 +61,7 @@ def convolutional_neural_network(data):
 
 
 def main():
-    x, y, train_lines = tf_loader(n_classes, batch_size, hm_epochs)
+    x, y, t_image, t_label, train_lines = tf_loader(n_classes, batch_size, hm_epochs)
     # t_image, t_label = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=False)
     # _, _, train_lines = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=True)
 
@@ -97,23 +99,12 @@ def main():
 
         # converting t_image from Tensor to numpy ndarray, for use in eval function for feed dict
         # t_image, t_label = sess.run([t_image, t_label])
-        # importing test data using zip loader
-        t_image, t_label = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=False)
 
         merged = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter('D:/train/current', sess.graph)
 
-        # conf_matrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(prediction, 1), num_classes=n_classes)
-        # conf_matrix_eval, test_accuracy = sess.run([conf_matrix, accuracy], feed_dict={x: t_image, y: t_label})
-        # with open('D:/train/current/confMatrix{}.txt'.format(5), 'w') as confMatrixOutput:
-        #     for line in conf_matrix_eval:
-        #         for word in line:
-        #             confMatrixOutput.write('{:>4}'.format(word))
-        #             print('{:>4}'.format(word), end='')
-        #         print('')
-        #         confMatrixOutput.write('\n')
-        # # Print out the current test accuracy
-        # print('Accuracy:', test_accuracy)
+        # probably will have to be removed
+        tf.get_default_graph().finalize()
 
         for epoch in range(hm_epochs):
             epoch_loss = 0
@@ -122,14 +113,25 @@ def main():
             # n = int(mnist.train.num_examples/batch_size)
             n = int(n/batch_size)
 
+            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            run_metadata = tf.RunMetadata()
+            many_runs_timeline = TimeLiner()
+
             for i in range(n):
                 # epoch_x, epoch_y = mnist.train.next_batch(batch_size)
                 # epoch_x, epoch_y, _ = tf_loader('D:/by_merge.zip', n_classes, batch_size, load_train=True, \
                 #     current=i*batch_size)
-                if i % 10 == 0:
-                    summary, _, c = sess.run([merged, optimizer, cost])
+                if i % 50 == 0:
+                    summary, _, c = sess.run([merged, optimizer, cost], options=run_options, run_metadata=run_metadata)
                     # summary, _, c = sess.run([merged, optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
                     train_writer.add_summary(summary, (epoch * n + i)/10)
+
+                    # Create the Timeline object, and write it to a json
+                    tl = timeline.Timeline(run_metadata.step_stats)
+                    chrome_trace = tl.generate_chrome_trace_format()
+
+                    many_runs_timeline.update_timeline(chrome_trace)
+                    many_runs_timeline.save('timeline_merged_%d_runs.json' % i)
                 else:
                     _, c = sess.run([optimizer, cost])
                     # _, c = sess.run([optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
@@ -149,7 +151,8 @@ def main():
 
             # Added output of current Confusion Matrix
             conf_matrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(prediction, 1), num_classes=n_classes)
-            conf_matrix_eval, test_accuracy = sess.run([conf_matrix, accuracy], feed_dict={x: t_image, y: t_label})
+
+            conf_matrix_eval, test_accuracy = sess.run([conf_matrix, accuracy])  # , feed_dict={x: t_image, y: t_label})
             with open('D:/train/current/confMatrix{}.txt'.format(epoch), 'w') as confMatrixOutput:
                 for line in conf_matrix_eval:
                     for word in line:

@@ -4,12 +4,8 @@ Created on Sun May 21 19:40:17 2017
 
 @author: Amar Civgin
 """
-import io
-import random
-import numpy as np
 import tensorflow as tf
-from PIL import Image
-from zipfile import ZipFile
+
 
 def read_labeled_image_list(image_list_file):
     """Reads a .txt file containing pathes and labeles
@@ -42,93 +38,15 @@ def read_images_from_disk(input_queue):
     return example, label
 
 
-def zip_loader(filename, n_classes, batch_size, load_train=True, shuffle=True, current=0):
-    with ZipFile(filename) as archive:
-        if load_train:
-            with open('filename lists/train1.txt') as train:
-                zip_loader.train_list = train.readlines()
-
-                if shuffle:
-                    random.shuffle(zip_loader.train_list)
-                images = None
-                labels = []
-                i = 0
-                for line in zip_loader.train_list[current: current + batch_size]:
-                    filename, label = line[:-1].split(' ')
-
-                    # loading image and converting from bytes to image to np array
-                    byte_content = archive.read(filename[3:].rstrip())
-
-                    image_content = Image.open(io.BytesIO(byte_content))
-                    image_content = image_content.convert('L')
-                    image_content = image_content.crop((12, 12, 116, 116))
-                    image_content = image_content.resize((52, 52), Image.BILINEAR)
-
-                    arr = np.asarray(image_content, dtype='float32')
-                    arr = np.reshape(arr, (1, 52, 52, 1))
-                    i = i+1
-                    if images is None:
-                        images = arr
-                    else:
-                        images = np.concatenate((images, arr), axis=0)
-                    labels.append(int(label))
-
-                # converting labels from int to one hot vector
-                labels_int = np.array(labels)
-                n_labels = labels_int.shape[0]
-                index_offset = np.arange(n_labels) * n_classes
-                labels = np.zeros((n_labels, n_classes))
-                labels.flat[index_offset + labels_int.ravel()] = 1
-                print(i)
-                return images, labels, zip_loader.train_list
-
-        else:
-            with open('filename lists/test1.txt') as test:
-                test_list = test.readlines()
-                random.shuffle(test_list)
-
-                t_images = None
-                t_labels = []
-                i = 0
-                for line in test_list:
-                    filename, t_label = line[:-1].split(' ')
-                    # loading image and converting from bytes to image to np array
-                    byte_content = archive.read(filename[3:].rstrip())
-
-                    image_content = Image.open(io.BytesIO(byte_content))
-                    image_content = image_content.convert('L')
-                    image_content = image_content.crop((12, 12, 116, 116))
-                    image_content = image_content.resize((52, 52), Image.BILINEAR)
-
-                    arr = np.asarray(image_content, dtype='float32')
-                    arr = np.reshape(arr, (1, 52, 52, 1))
-
-                    i = i + 1
-                    if t_images is None:
-                        t_images = arr
-                    else:
-                        t_images = np.concatenate((t_images, arr), axis=0)
-                    t_labels.append(int(t_label))
-                    if i >= 512:
-                        break
-
-                # converting labels from int to one hot vector
-                t_labels_int = np.array(t_labels)
-                n_t_labels = t_labels_int.shape[0]
-                index_offset = np.arange(n_t_labels) * n_classes
-                t_labels = np.zeros((n_t_labels, n_classes))
-                t_labels.flat[index_offset + t_labels_int.ravel()] = 1
-                return t_images, t_labels
-
-
 def tf_loader(n_classes, batch_size, hm_epochs):
     # Getting the number of samples
     with open('filename lists/train1.txt', 'r') as train:
         train_lines = train.read().splitlines()
 
     # Reads pfathes of images together with their labels
-    image_list, label_list = read_labeled_image_list('filename lists/train1.txt')
-    # t_image_list, t_label_list = read_labeled_image_list('filename lists/test2.txt')
+    image_list, label_list = read_labeled_image_list('filename lists/train.txt')
+    t_image_list, t_label_list = read_labeled_image_list('filename lists/test.txt')
+
     with tf.name_scope('loading'):
         images = tf.convert_to_tensor(image_list, dtype=tf.string)
         # t_images = tf.convert_to_tensor(t_image_list, dtype=tf.string)
@@ -141,7 +59,8 @@ def tf_loader(n_classes, batch_size, hm_epochs):
                                                     num_epochs=hm_epochs,
                                                     shuffle=False)
         # t_input_queue = tf.train.slice_input_producer([t_images, t_labels],
-        #                                            shuffle=True)
+        #                                               num_epochs=hm_epochs,
+        #                                               shuffle=False)
 
         image, label = read_images_from_disk(input_queue)
         # t_image, t_label = read_images_from_disk(t_input_queue)
@@ -153,39 +72,17 @@ def tf_loader(n_classes, batch_size, hm_epochs):
         image = tf.image.central_crop(image, .8125)
         image = tf.image.resize_images(image, [52, 52])
 
-        # with tf.Session() as sess:
-        #     sess.run(tf.local_variables_initializer())  #bitno
-        #     coord = tf.train.Coordinator()
-        #     threads = tf.train.start_queue_runners(sess = sess, coord = coord)          #bitno
-        #     image, label = sess.run([image, label])
-        #
-        #     plt.imshow(image.squeeze(), cmap='gray')
-        #     plt.show()
-        #     print(image.shape)
-        #
-        #     coord.request_stop()
-        #     coord.join(threads)
-        # sys.exit("Error message")
-
         # t_image = tf.cast(t_image, tf.float32)
         # t_image = tf.image.central_crop(t_image, .8125)
         # t_image = tf.image.resize_images(t_image, [52, 52])
 
-        min_after_dequeue = 10000
+        min_after_dequeue = batch_size
         capacity = min_after_dequeue + 3 * batch_size
-
-        # image, label = tf.train.batch([image, label], batch_size=batch_size, capacity=capacity, enqueue_many=True,
-        #                               name='image_loader')
 
         image, label = tf.train.shuffle_batch([image, label], batch_size=batch_size, capacity=capacity,
                                               min_after_dequeue=min_after_dequeue)
 
-        # t_image, t_label = tf.train.shuffle_batch([t_image, t_label], batch_size=batch_size, capacity=capacity,
-        #                                       min_after_dequeue=min_after_dequeue)
-        # return image, label, t_image, t_label, train_lines
-        return image, label, train_lines
-print('Successfully imported tfLoader.')
+        # t_image, t_label = tf.train.batch([t_image, t_label], batch_size=batch_size, capacity=capacity)
 
-if __name__ == '__main__':
-    print('Executing code inside tfLoader main')
-    zip_loader('D:/by_merge.zip', 47, 10)
+        return image, label, 0, 0, train_lines
+print('Successfully imported tfLoader.')
