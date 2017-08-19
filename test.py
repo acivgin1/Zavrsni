@@ -74,7 +74,7 @@ def main():
             tf.summary.scalar('cross_entropy', cost)
 
             with tf.name_scope('train'):
-                optimizer = tf.train.AdamOptimizer().minimize(cost) # using Adam Optimizer algorithm for reducing cost
+                optimizer = tf.train.AdamOptimizer().minimize(cost)  # using Adam Optimizer algorithm for reducing cost
 
             with tf.name_scope('accuracy'):
                 with tf.name_scope('correct_prediction'):
@@ -124,6 +124,7 @@ def main():
 
                     # summary, _, c = sess.run([merged, optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
                     train_writer.add_summary(summary, (epoch * n + i)/10)
+                    # TODO sredi ovo, treba biti isto ko i ovaj broj s kojim moduliras
 
                     # Create the Timeline object, and write it to a json
                     # tl = timeline.Timeline(run_metadata.step_stats)
@@ -155,8 +156,8 @@ def main():
                 for line in conf_matrix_eval:
                     for word in line:
                         confMatrixOutput.write('{:>4}'.format(word))
-                        print('{:>4}'.format(word), end='')
-                    print('')
+                        # print('{:>4}'.format(word), end='')
+                    # print('')
                     confMatrixOutput.write('\n')
             # Print out the current test accuracy
             print('Accuracy:', test_accuracy)
