@@ -5,7 +5,7 @@ Created on Sun May 21 19:40:17 2017
 @author: Amar Civgin
 """
 import tensorflow as tf
-
+import matplotlib.pyplot as plt
 
 def read_labeled_image_list(image_list_file):
     """Reads a .txt file containing pathes and labeles
@@ -85,4 +85,63 @@ def tf_loader(n_classes, batch_size, hm_epochs):
         # t_image, t_label = tf.train.batch([t_image, t_label], batch_size=batch_size, capacity=capacity)
 
         return image, label, 0, 0, train_lines
+
+
+def read_and_decode_single_example(filename, hm_epochs):
+    # first construct a queue containing a list of filenames.
+    # this lets a user split up there dataset in multiple files to keep
+    # size down
+    filename_queue = tf.train.string_input_producer([filename],
+                                                    num_epochs=hm_epochs,)
+    # Unlike the TFRecordWriter, the TFRecordReader is symbolic
+    reader = tf.TFRecordReader()
+    # One can read a single serialized example from a filename
+    # serialized_example is a Tensor of type string.
+    _, serialized_example = reader.read(filename_queue)
+    # The serialized example is converted back to actual values.
+    # One needs to describe the format of the objects to be returned
+    features = tf.parse_single_example(
+        serialized_example,
+        features={
+            # We know the length of both fields. If not the
+            # tf.VarLenFeature could be used
+            'image_raw': tf.FixedLenFeature([], tf.string),
+            'label': tf.FixedLenFeature([], tf.int64)
+        }
+    )
+    # now return the converted data
+    label = features['label']
+    image_raw = features['image_raw']
+    image = tf.decode_raw(image_raw, tf.float32)
+    image = tf.reshape(image, (52, 52))
+
+    # print(image.shape)
+
+    # with tf.Session() as sess:
+    #     tf.global_variables_initializer().run()
+    #     tf.local_variables_initializer().run()  # loads images into x and y variables
+    #     coord = tf.train.Coordinator()  # coordinator used for coordinating between various threads that load data
+    #     threads = tf.train.start_queue_runners(sess=sess, coord=coord)  # bitno
+    #     image_raw = sess.run(image)
+    #     plt.imshow(image_raw.squeeze(), cmap='gray')
+    #     plt.show()
+    #     coord.request_stop()
+    #     coord.join(threads)
+    return label, image
+
+
+def tfrecords_loader(n_classes, batch_size, hm_epochs):
+    with tf.name_scope('tfRecordsloading'):
+        label, image = read_and_decode_single_example("mnist.tfrecords", hm_epochs)
+
+        label = tf.one_hot(label, n_classes)
+
+        images_batch, labels_batch = tf.train.shuffle_batch([image, label], batch_size=batch_size, capacity=20000,
+                                                            min_after_dequeue=10000)
+        return images_batch, labels_batch, 0, 0, 731668
+
+if __name__ == '__main__':
+    print('hi')
+    tfrecords_loader(47, 128, 10)
+
 print('Successfully imported tfLoader.')

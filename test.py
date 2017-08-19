@@ -3,11 +3,11 @@ import datetime
 import time
 import os.path
 
+from tfLoader import tfrecords_loader
 from tfHelperFunctions import conv_layer
 from tfHelperFunctions import max_pool_layer
 from tfHelperFunctions import nn_layer
 from tfHelperFunctions import variable_summaries
-from tfLoader import tf_loader
 
 from tensorflow.python.client import timeline
 
@@ -60,7 +60,7 @@ def convolutional_neural_network(data):
 
 
 def main():
-    x, y, t_image, t_label, train_lines = tf_loader(n_classes, batch_size, hm_epochs)
+    x, y, t_image, t_label, n = tfrecords_loader(n_classes, batch_size, hm_epochs)
     # t_image, t_label = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=False)
     # _, _, train_lines = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=True)
 
@@ -88,6 +88,7 @@ def main():
             saver.restore(sess, "D:/train/current/saves/model.ckpt")
             print("Model restored.")
         else:
+            saver = tf.train.Saver()
             print("Previous save missing...\nStarting with random values.")
             tf.global_variables_initializer().run()
 
@@ -105,27 +106,30 @@ def main():
         for epoch in range(hm_epochs):
             epoch_loss = 0
 
-            n = len(train_lines)
+            #n = len(train_lines)
             # n = int(mnist.train.num_examples/batch_size)
             n = int(n/batch_size)
 
-            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-            run_metadata = tf.RunMetadata()
+            # run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            # run_metadata = tf.RunMetadata()
 
-            for i in range(n):
+            for i in range(100):
                 # epoch_x, epoch_y = mnist.train.next_batch(batch_size)
                 # epoch_x, epoch_y, _ = tf_loader('D:/by_merge.zip', n_classes, batch_size, load_train=True, \
                 #     current=i*batch_size)
-                if i % 50 == 0:
-                    summary, _, c = sess.run([merged, optimizer, cost], options=run_options, run_metadata=run_metadata)
+                if i % 5 == 0:
+                    # summary, _, c = sess.run([merged, optimizer, cost], options=run_options,
+                    #                          run_metadata=run_metadata)
+                    summary, _, c = sess.run([merged, optimizer, cost])
+
                     # summary, _, c = sess.run([merged, optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
                     train_writer.add_summary(summary, (epoch * n + i)/10)
 
                     # Create the Timeline object, and write it to a json
-                    tl = timeline.Timeline(run_metadata.step_stats)
-                    ctf = tl.generate_chrome_trace_format()
-                    with open('timeline' + str(i) + '.json', 'w') as f:
-                        f.write(ctf)
+                    # tl = timeline.Timeline(run_metadata.step_stats)
+                    # ctf = tl.generate_chrome_trace_format()
+                    # with open('timeline' + str(i) + '.json', 'w') as f:
+                    #     f.write(ctf)
                 else:
                     _, c = sess.run([optimizer, cost])
                     # _, c = sess.run([optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
