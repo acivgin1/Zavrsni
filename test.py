@@ -3,6 +3,8 @@ import datetime
 import time
 import os.path
 
+from tqdm import tqdm
+
 from tfLoader import tfrecords_loader
 from tfHelperFunctions import conv_layer
 from tfHelperFunctions import max_pool_layer
@@ -10,8 +12,8 @@ from tfHelperFunctions import nn_layer
 from tfHelperFunctions import variable_summaries
 
 from tensorflow.python.client import timeline
-
-# import sys
+import numpy as np
+import sys
 # import numpy as np
 # import matplotlib.pyplot as plt
 
@@ -31,25 +33,26 @@ def convolutional_neural_network(data):
     data = tf.reshape(data, shape=[-1, 52, 52, 1], name='input')
 
     # conv_layer(data, filter_height, filter_width, in_channels, out_channels, strides, padding, layer_name)
-    conv1 = conv_layer(data, 5, 5, 1, 8, [1, 1, 1, 1], 'SAME', 'conv1')
+    conv1 = conv_layer(data, 5, 5, 1, 16, [1, 1, 1, 1], 'SAME', 'conv1')
     # max_pool_layer(data, ksize, strides, padding, layer_name)
     conv1 = max_pool_layer(conv1, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME', 'max_pool1')
 
-    conv2 = conv_layer(conv1, 5, 5, 8, 32, [1, 1, 1, 1], 'SAME', 'conv2')
+    conv2 = conv_layer(conv1, 5, 5, 16, 32, [1, 1, 1, 1], 'SAME', 'conv2')
     conv2 = max_pool_layer(conv2, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME', 'max_pool2')
 
-    # conv3 = conv_layer(conv2, 5, 5, 32, 16, [1,1,1,1], 'SAME', 'conv3')
-    # conv3 = max_pool_layer(conv3, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME', 'max_pool3')
+    #conv3 = conv_layer(conv2, 5, 5, 32, 32, [1,1,1,1], 'SAME', 'conv3')
+    #conv3 = max_pool_layer(conv3, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME', 'max_pool3')
 
     shape_dim = 13*13*32
     fc1 = tf.reshape(conv2, shape=[-1, shape_dim], name='conv2_maxpool3')
-    fc1 = nn_layer(fc1, shape_dim, 128, 'fully_connected1')
-    # fc1 = tf.nn.dropout(fc1, 0.85)
+    fc1 = tf.nn.dropout(fc1, 0.7)
+    fc1 = nn_layer(fc1, shape_dim, 256, 'fully_connected1')
+    fc1 = tf.nn.dropout(fc1, 0.9)
     # fc2 = nn_layer(fc1, 1024, 128, 'fully_connected2')
 
     with tf.name_scope('output'):
         with tf.name_scope('output_weights'):
-            weights = tf.Variable(tf.random_normal([128, n_classes]), name='output' + 'weights')
+            weights = tf.Variable(tf.random_normal([256, n_classes]), name='output' + 'weights')
             variable_summaries(weights)
         with tf.name_scope('output_biases'):
             biases = tf.Variable(tf.random_normal([n_classes]), name='output' + 'biases')
@@ -60,7 +63,8 @@ def convolutional_neural_network(data):
 
 
 def main():
-    x, y, t_image, t_label, n = tfrecords_loader(n_classes, batch_size, hm_epochs)
+    print('Starting training.')
+    x, y, num_examples = tfrecords_loader(n_classes, batch_size, hm_epochs)
     # t_image, t_label = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=False)
     # _, _, train_lines = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=True)
 
@@ -106,25 +110,24 @@ def main():
         for epoch in range(hm_epochs):
             epoch_loss = 0
 
-            #n = len(train_lines)
             # n = int(mnist.train.num_examples/batch_size)
-            n = int(n/batch_size)
+            n = int(num_examples/batch_size)
 
             # run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
             # run_metadata = tf.RunMetadata()
 
-            for i in range(100):
+            for i in tqdm(range(n)):
                 # epoch_x, epoch_y = mnist.train.next_batch(batch_size)
                 # epoch_x, epoch_y, _ = tf_loader('D:/by_merge.zip', n_classes, batch_size, load_train=True, \
                 #     current=i*batch_size)
                 if i % 5 == 0:
                     # summary, _, c = sess.run([merged, optimizer, cost], options=run_options,
                     #                          run_metadata=run_metadata)
-                    summary, _, c = sess.run([merged, optimizer, cost])
 
+                    summary, _, c = sess.run([merged, optimizer, cost])
+                    #_, c = sess.run([optimizer, cost])
                     # summary, _, c = sess.run([merged, optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
-                    train_writer.add_summary(summary, (epoch * n + i)/10)
-                    # TODO sredi ovo, treba biti isto ko i ovaj broj s kojim moduliras
+                    train_writer.add_summary(summary, (epoch * n + i)/5)
 
                     # Create the Timeline object, and write it to a json
                     # tl = timeline.Timeline(run_metadata.step_stats)
@@ -156,8 +159,6 @@ def main():
                 for line in conf_matrix_eval:
                     for word in line:
                         confMatrixOutput.write('{:>4}'.format(word))
-                        # print('{:>4}'.format(word), end='')
-                    # print('')
                     confMatrixOutput.write('\n')
             # Print out the current test accuracy
             print('Accuracy:', test_accuracy)
@@ -165,4 +166,51 @@ def main():
         coord.request_stop()
         coord.join(threads)
 
+
+def test():
+    print('Starting testing and confusion matrix and accuracy evaluation.')
+    batch_size = 2048
+    hm_epochs = 1
+    x, y, n = tfrecords_loader(n_classes, batch_size, hm_epochs, train=False)
+    # t_image, t_label = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=False)
+    # _, _, train_lines = zip_loader('D:/by_merge.zip', n_classes, batch_size, load_train=True)
+    prediction = convolutional_neural_network(x)
+
+    with tf.Session() as sess:
+        if os.path.isfile("D:/train/current/saves/model.ckpt.meta"):
+            saver = tf.train.Saver()
+            saver.restore(sess, "D:/train/current/saves/model.ckpt")
+            print("Model restored.")
+        else:
+            print("Save missing.\nExiting...")
+            sys.exit()
+
+        tf.local_variables_initializer().run()  # loads images into x and y variables
+
+        coord = tf.train.Coordinator()  # coordinator used for coordinating between various threads that load data
+        threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+        # Added output of current Confusion Matrix
+        conf_matrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(prediction, 1), num_classes=n_classes)
+
+        conf_matrix_eval = np.zeros((1, 47, 47))
+
+        for i in tqdm(range(int(n/batch_size)+1)):
+            current_conf_matrix_eval = sess.run([conf_matrix])
+            conf_matrix_eval = np.add(conf_matrix_eval, np.asarray(current_conf_matrix_eval))
+
+        with open('D:/train/current/confMatrixTest.txt', 'w') as confMatrixOutput:
+            for i in range(47):
+                for j in range(47):
+                    confMatrixOutput.write('{:>5}'.format(int(conf_matrix_eval[(0, i, j)])))
+                confMatrixOutput.write('\n')
+        diag_sum = 0
+        for i in range(47):
+            diag_sum = diag_sum + conf_matrix_eval[(0, i, i)]
+        accuracy = 100*diag_sum/np.sum(conf_matrix_eval)
+        print('Accuracy: {} of {} examples'.format(accuracy, int(np.sum(conf_matrix_eval))))
+        coord.request_stop()
+        coord.join(threads)
+
+
 main()
+#test()

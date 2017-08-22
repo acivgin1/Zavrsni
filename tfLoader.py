@@ -130,16 +130,22 @@ def read_and_decode_single_example(filename, hm_epochs):
     return label, image
 
 
-def tfrecords_loader(n_classes, batch_size, hm_epochs):
-    with tf.name_scope('tfRecordsloading'):
-        label, image = read_and_decode_single_example("mnist.tfrecords", hm_epochs)
+def tfrecords_loader(n_classes, batch_size, hm_epochs, train=True):
+    if train:
+        with tf.name_scope('tfRecordsloading'):
+            label, image = read_and_decode_single_example("mnist.tfrecords", hm_epochs)
 
+            label = tf.one_hot(label, n_classes)
+
+            images_batch, labels_batch = tf.train.shuffle_batch([image, label], batch_size=batch_size, capacity=20000,
+                                                                min_after_dequeue=10000)
+            return images_batch, labels_batch, 731668
+    else:
+        label, image = read_and_decode_single_example("mnist_test.tfrecords", hm_epochs)
         label = tf.one_hot(label, n_classes)
-
-        images_batch, labels_batch = tf.train.shuffle_batch([image, label], batch_size=batch_size, capacity=20000,
-                                                            min_after_dequeue=10000)
-        return images_batch, labels_batch, 0, 0, 731668
-
+        images_batch, labels_batch = tf.train.batch([image, label], batch_size=batch_size, capacity=82587,
+                                                    allow_smaller_final_batch=True)
+        return images_batch, labels_batch, 82587
 if __name__ == '__main__':
     print('hi')
     tfrecords_loader(47, 128, 10)
