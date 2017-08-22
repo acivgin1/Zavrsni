@@ -19,11 +19,11 @@ def _bytes_feature(value):
 
 
 with ZipFile('D:/by_merge.zip') as archive:
-    with open('filename lists/train1.txt') as train:
+    with open('filename lists/testfinalest.txt') as train:
         train_list = train.readlines()
         random.shuffle(train_list)
 
-        writer = tf.python_io.TFRecordWriter('mnist.tfrecords')
+        writer = tf.python_io.TFRecordWriter('mnist_test.tfrecords')
         for line in tqdm(train_list[:]):
             filename, label = line[:-1].split(' ')
 

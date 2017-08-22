@@ -4,6 +4,7 @@ Created on Wed May 17 12:38:41 2017
 
 @author: Amar Civgin
 """
+from random import shuffle
 import sys
 
 # with open('C:/Users/Amar Civgin/PycharmProjects/Zavrsni/filename lists/output.txt', 'r') as output:
@@ -17,21 +18,18 @@ import sys
 #                 n_classes = n_classes + 1
 #             output1.write('{} {}\n'.format(line.rstrip(), n_classes))
 
-with open('C:/Users/Amar Civgin/PycharmProjects/Zavrsni/filename lists/output1.txt', 'r') as output:
-    n_output = 0
-    n_output_classes = []
-    old_y = 0
-    i = 0
+with open('D:/Current projects/Zavrsni/filename lists/output1.txt', 'r') as output:
+    with open('D:/Current projects/Zavrsni/filename lists/testfinal.txt', 'w') as test:
+        for line in output:
+            filename, y = line[:-1].split(' ')
+            if filename.find('hsf_4') != -1 or filename.find('hsf_5') != -1:
+                test.write('{}'.format(line))
 
-    for line in output:
-        _, y = line[:-1].split(' ')
-        i = i+1
-        n_output = n_output + 1
-        if old_y != int(y):
-            old_y = int(y)
-            n_output_classes.append(i)
-            i = 0
-
-    print(n_output)
-    print(min(n_output_classes))
-    print(n_output_classes)
+with open('D:/Current projects/Zavrsni/filename lists/testfinal.txt', 'r') as test:
+    with open('D:/Current projects/Zavrsni/filename lists/testfinalest.txt', 'w') as output:
+        test_lines = []
+        for line in test:
+            test_lines.append(line)
+        shuffle(test_lines)
+        for line in test_lines:
+            output.write(line)
