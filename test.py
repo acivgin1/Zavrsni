@@ -19,6 +19,8 @@ n_classes = 47
 batch_size = 2048
 hm_epochs = 10
 current_location="D:/train/current"
+beta = 0.01
+
 
 def convolutional_neural_network(data):
     data = tf.reshape(data, shape=[-1, 52, 52, 1], name='input')
@@ -28,16 +30,15 @@ def convolutional_neural_network(data):
     # max_pool_layer(data, ksize, strides, padding, layer_name)
     conv1 = max_pool_layer(conv1, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME', 'max_pool1')
 
-    conv2 = conv_layer(conv1, 5, 5, 16, 32, [1, 1, 1, 1], 'SAME', 'conv2')
+    conv2 = conv_layer(conv1, 5, 5, 16, 24, [1, 1, 1, 1], 'SAME', 'conv2')
     conv2 = max_pool_layer(conv2, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME', 'max_pool2')
 
     #conv3 = conv_layer(conv2, 5, 5, 32, 32, [1,1,1,1], 'SAME', 'conv3')
     #conv3 = max_pool_layer(conv3, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME', 'max_pool3')
 
-    shape_dim = 13*13*32
+    shape_dim = 13*13*24
     fc1 = tf.reshape(conv2, shape=[-1, shape_dim], name='conv2_maxpool3')
     fc1 = nn_layer(fc1, shape_dim, 256, 'fully_connected1')
-    fc1 = tf.nn.dropout(fc1, 0.9)
     # fc2 = nn_layer(fc1, 1024, 128, 'fully_connected2')
 
     with tf.name_scope('output'):
@@ -58,11 +59,14 @@ def main():
 
     with tf.Session() as sess:
         prediction = convolutional_neural_network(x)
+        weights = [v for v in tf.global_variables() if v.name == "fully_connected1/weights/fully_connected1weights:0"][0]
 
         # defining name scopes for cost and accuracy to be written into the summary file
         with tf.name_scope('training'):
             with tf.name_scope('cross_entropy'):
                 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=prediction))
+                regularizer = tf.nn.l2_loss(weights)
+                cost = tf.reduce_mean(cost + beta * regularizer)
             tf.summary.scalar('cross_entropy', cost)
             with tf.name_scope('train'):
                 optimizer = tf.train.AdamOptimizer().minimize(cost)  # using Adam Optimizer algorithm for reducing cost
@@ -86,6 +90,8 @@ def main():
         coord = tf.train.Coordinator()  # coordinator used for coordinating between various threads that load data
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)          # bitno
 
+
+        #print(weights.shape)
         merged = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter(current_location, sess.graph)
 
