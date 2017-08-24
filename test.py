@@ -18,7 +18,7 @@ import sys
 n_classes = 47
 batch_size = 2048
 hm_epochs = 10
-current_location="D:/train/current"
+current_location = "current"
 beta = 0.01
 
 
@@ -26,19 +26,19 @@ def convolutional_neural_network(data):
     data = tf.reshape(data, shape=[-1, 52, 52, 1], name='input')
 
     # conv_layer(data, filter_height, filter_width, in_channels, out_channels, strides, padding, layer_name)
-    conv1 = conv_layer(data, 5, 5, 1, 16, [1, 1, 1, 1], 'SAME', 'conv1')
+    conv1 = conv_layer(data, 5, 5, 1, 32, [1, 1, 1, 1], 'SAME', 'conv1')
     # max_pool_layer(data, ksize, strides, padding, layer_name)
-    conv1 = max_pool_layer(conv1, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME', 'max_pool1')
+    conv1 = max_pool_layer(conv1, [1, 4, 4, 1], [1, 3, 3, 1], 'SAME', 'max_pool1')
 
-    conv2 = conv_layer(conv1, 5, 5, 16, 24, [1, 1, 1, 1], 'SAME', 'conv2')
-    conv2 = max_pool_layer(conv2, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME', 'max_pool2')
+    conv2 = conv_layer(conv1, 5, 5, 32, 32, [1, 1, 1, 1], 'SAME', 'conv2')
+    conv2 = max_pool_layer(conv2, [1, 3, 3, 1], [1, 2, 2, 1], 'SAME', 'max_pool2')
 
     #conv3 = conv_layer(conv2, 5, 5, 32, 32, [1,1,1,1], 'SAME', 'conv3')
     #conv3 = max_pool_layer(conv3, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME', 'max_pool3')
 
-    shape_dim = 13*13*24
+    shape_dim = 9*9*32
     fc1 = tf.reshape(conv2, shape=[-1, shape_dim], name='conv2_maxpool3')
-    fc1 = nn_layer(fc1, shape_dim, 256, 'fully_connected1')
+    fc1 = nn_layer(fc1, shape_dim, 256, 'fully_connected1', act=tf.nn.relu)
     # fc2 = nn_layer(fc1, 1024, 128, 'fully_connected2')
 
     with tf.name_scope('output'):
@@ -59,8 +59,9 @@ def main():
 
     with tf.Session() as sess:
         prediction = convolutional_neural_network(x)
-        weights = [v for v in tf.global_variables() if v.name == "fully_connected1/weights/fully_connected1weights:0"][0]
-
+        weights = [v for v in tf.global_variables() if v.name ==
+                   "fully_connected1/weights/fully_connected1weights:0"][0]
+        print(weights.shape)
         # defining name scopes for cost and accuracy to be written into the summary file
         with tf.name_scope('training'):
             with tf.name_scope('cross_entropy'):
@@ -90,8 +91,6 @@ def main():
         coord = tf.train.Coordinator()  # coordinator used for coordinating between various threads that load data
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)          # bitno
 
-
-        #print(weights.shape)
         merged = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter(current_location, sess.graph)
 
@@ -186,5 +185,6 @@ def test():
         coord.join(threads)
 
 
-main()
-#test()
+if __name__ == '__main__':
+    main()
+    #test()
