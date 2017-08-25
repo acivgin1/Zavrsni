@@ -21,16 +21,18 @@ hm_epochs = 10
 current_location = "current"
 beta = 0.01
 
+# 1280537 parameters
+
 
 def convolutional_neural_network(data):
     data = tf.reshape(data, shape=[-1, 52, 52, 1], name='input')
 
     # conv_layer(data, filter_height, filter_width, in_channels, out_channels, strides, padding, layer_name)
-    conv1 = conv_layer(data, 5, 5, 1, 34, [1, 1, 1, 1], 'SAME', 'conv1')
+    conv1 = conv_layer(data, 5, 5, 1, 40, [1, 1, 1, 1], 'SAME', 'conv1')
     # max_pool_layer(data, ksize, strides, padding, layer_name)
     conv1 = max_pool_layer(conv1, [1, 4, 4, 1], [1, 3, 3, 1], 'SAME', 'max_pool1')
 
-    conv2 = conv_layer(conv1, 5, 5, 34, 50, [1, 1, 1, 1], 'SAME', 'conv2')
+    conv2 = conv_layer(conv1, 5, 5, 40, 50, [1, 1, 1, 1], 'SAME', 'conv2')
     conv2 = max_pool_layer(conv2, [1, 3, 3, 1], [1, 2, 2, 1], 'SAME', 'max_pool2')
 
     #conv3 = conv_layer(conv2, 5, 5, 32, 32, [1,1,1,1], 'SAME', 'conv3')
@@ -38,12 +40,12 @@ def convolutional_neural_network(data):
 
     shape_dim = 9*9*50
     fc1 = tf.reshape(conv2, shape=[-1, shape_dim], name='conv2_maxpool3')
-    fc1 = nn_layer(fc1, shape_dim, 256, 'fully_connected1', act=tf.nn.relu)
+    fc1 = nn_layer(fc1, shape_dim, 300, 'fully_connected1', act=tf.nn.relu)
     # fc2 = nn_layer(fc1, 1024, 128, 'fully_connected2')
 
     with tf.name_scope('output'):
         with tf.name_scope('output_weights'):
-            weights = tf.Variable(tf.random_normal([256, n_classes]), name='output' + 'weights')
+            weights = tf.Variable(tf.random_normal([300, n_classes]), name='output' + 'weights')
             variable_summaries(weights)
         with tf.name_scope('output_biases'):
             biases = tf.Variable(tf.random_normal([n_classes]), name='output' + 'biases')
