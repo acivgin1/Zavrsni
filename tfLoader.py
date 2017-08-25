@@ -7,6 +7,7 @@ Created on Sun May 21 19:40:17 2017
 import tensorflow as tf
 #import matplotlib.pyplot as plt
 
+
 def read_labeled_image_list(image_list_file):
     """Reads a .txt file containing pathes and labeles
     Args:
