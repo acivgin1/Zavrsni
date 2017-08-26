@@ -22,6 +22,7 @@ current_location = "current"
 beta = 0.01
 
 # 1280537 parameters
+# 2039567 parameters
 
 
 def convolutional_neural_network(data):
@@ -32,13 +33,13 @@ def convolutional_neural_network(data):
     # max_pool_layer(data, ksize, strides, padding, layer_name)
     conv1 = max_pool_layer(conv1, [1, 4, 4, 1], [1, 3, 3, 1], 'SAME', 'max_pool1')
 
-    conv2 = conv_layer(conv1, 5, 5, 40, 50, [1, 1, 1, 1], 'SAME', 'conv2')
+    conv2 = conv_layer(conv1, 5, 5, 40, 80, [1, 1, 1, 1], 'SAME', 'conv2')
     conv2 = max_pool_layer(conv2, [1, 3, 3, 1], [1, 2, 2, 1], 'SAME', 'max_pool2')
 
     #conv3 = conv_layer(conv2, 5, 5, 32, 32, [1,1,1,1], 'SAME', 'conv3')
     #conv3 = max_pool_layer(conv3, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME', 'max_pool3')
 
-    shape_dim = 9*9*50
+    shape_dim = 9*9*80
     fc1 = tf.reshape(conv2, shape=[-1, shape_dim], name='conv2_maxpool3')
     fc1 = nn_layer(fc1, shape_dim, 300, 'fully_connected1', act=tf.nn.relu)
     # fc2 = nn_layer(fc1, 1024, 128, 'fully_connected2')
@@ -137,7 +138,7 @@ def main():
             # Added output of current Confusion Matrix
             conf_matrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(prediction, 1), num_classes=n_classes)
 
-            conf_matrix_eval, test_accuracy = sess.run([conf_matrix, accuracy])  # , feed_dict={x: t_image, y: t_label})
+            conf_matrix_eval, test_accuracy = sess.run([conf_matrix, accuracy])
             with open(current_location + "/confMatrix{}.txt".format(epoch), 'w') as confMatrixOutput:
                 for line in conf_matrix_eval:
                     for word in line:
