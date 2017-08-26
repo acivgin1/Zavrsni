@@ -52,6 +52,7 @@ def convolutional_neural_network(data):
             biases = tf.Variable(tf.random_normal([n_classes]), name='output' + 'biases')
             variable_summaries(biases)
         output = tf.matmul(fc1, weights) + biases
+        tf.summary.histogram('weights', weights)
         tf.summary.histogram('output', output)
     return output
 
@@ -101,9 +102,9 @@ def main():
         merged = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter(current_location, sess.graph)
 
+        n = int(num_examples / batch_size) - 1
         for epoch in range(hm_epochs):
             epoch_loss = 0
-            n = int(num_examples/batch_size)
 
             # run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
             # run_metadata = tf.RunMetadata()
@@ -114,6 +115,7 @@ def main():
                     #                          run_metadata=run_metadata)
                     summary, _, c = sess.run([merged, optimizer, cost])
                     train_writer.add_summary(summary, (epoch * n + i)/5)
+
                     # Create the Timeline object, and write it to a json
                     # tl = timeline.Timeline(run_metadata.step_stats)
                     # ctf = tl.generate_chrome_trace_format()
