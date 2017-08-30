@@ -10,14 +10,14 @@ from tfHelperFunctions import max_pool_layer
 from tfHelperFunctions import nn_layer
 from tfHelperFunctions import variable_summaries
 
-from tensorflow.python.client import timeline
+# from tensorflow.python.client import timeline
 import numpy as np
 import sys
 # import matplotlib.pyplot as plt
 
 n_classes = 47
 batch_size = 2048
-hm_epochs = 10
+hm_epochs = 40
 current_location = "current"
 beta = 0.01
 
