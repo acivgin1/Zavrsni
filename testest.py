@@ -2,13 +2,8 @@ from test import test
 
 # racunar print('Accuracy: 44.861 of 82587 examples')
 # racunar print('Accuracy: 60.945 of 82587 examples')
+# racunar print('Accuracy: 73.038 of 81920 examples')
 
-# print('Accuracy: 48 of 82587 examples')
-# print('Accuracy: 55.367 of 82587 examples')
-# print('Accuracy: 57.539 of 82587 examples')
-# print('Accuracy: 60.064 of 82587 examples')
-# print('Accuracy: 63.270 of 82587 examples')
-# print('Accuracy: 64.188 of 82587 examples')
-# laptop print('Accuracy: 37.018 of 82587 examples')
+# racunar print('Accuracy: 83.980 of 729088 examples')
 
-test()
+test(train=False)

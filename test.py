@@ -19,7 +19,7 @@ n_classes = 47
 batch_size = 2048
 hm_epochs = 40
 current_location = "current"
-beta = 0.01
+beta = 0.009
 
 # 1280537 parameters
 # 2039567 parameters
@@ -78,7 +78,7 @@ def main():
                 cost = tf.reduce_mean(cost + beta * (regularizer_fc + regularizer_fl))
             tf.summary.scalar('cross_entropy', cost)
             with tf.name_scope('train'):
-                optimizer = tf.train.AdamOptimizer().minimize(cost)  # using Adam Optimizer algorithm for reducing cost
+                optimizer = tf.train.AdamOptimizer(learning_rate=1e-6, epsilon=0.1).minimize(cost)  # using Adam Optimizer algorithm for reducing cost
             with tf.name_scope('accuracy'):
                 with tf.name_scope('correct_prediction'):
                     correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
@@ -153,11 +153,11 @@ def main():
         coord.join(threads)
 
 
-def test():
+def test(train):
     print('Starting testing and confusion matrix and accuracy evaluation.')
-    batch_size = 2048
+    batch_size = 4096
     hm_epochs = 1
-    x, y, n = tfrecords_loader(n_classes, batch_size, hm_epochs, train=False)
+    x, y, n = tfrecords_loader(n_classes, batch_size, hm_epochs, train=train)
     prediction = convolutional_neural_network(x)
 
     with tf.Session() as sess:
@@ -176,7 +176,7 @@ def test():
         conf_matrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(prediction, 1), num_classes=n_classes)
         conf_matrix_eval = np.zeros((1, 47, 47))
 
-        for _ in tqdm(range(int(n/batch_size)+1)):
+        for _ in tqdm(range(int(n/batch_size))):
             current_conf_matrix_eval = sess.run([conf_matrix])
             conf_matrix_eval = np.add(conf_matrix_eval, np.asarray(current_conf_matrix_eval))
 
