@@ -23,6 +23,20 @@ beta = 0.009
 
 # 1280537 parameters
 # 2039567 parameters
+decode = ['7', 'a', 'F', 'I', '5', '4', 'M', 'R', 'B', 'd',
+          'h', 'D', 'Z', 'W', 'H', 'K', 'J', 'N', 'O', 'X',
+          't', 'b', 'L', 'n', 'g', 'S', 'r', 'Y', 'Q', '0',
+          'P', 'T', '2', 'e', '6', 'V', '9', 'E', 'U', 'A',
+          'f', 'q', '8', '3', 'C', '1', 'G']
+
+permute = [
+    7,  36, 15, 18,  5,  4, 22, 27, 11, 38,
+    42, 13, 35, 32, 17, 20, 19, 23, 24, 33,
+    46, 37, 21, 43, 41, 28, 45, 34, 26,  0,
+    25, 29,  2, 39,  6, 31,  9, 14, 30, 10,
+    40, 44,  8,  3, 12,  1, 16]
+
+permute = np.argsort(permute)
 
 
 def convolutional_neural_network(data):
@@ -141,6 +155,7 @@ def main():
             conf_matrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(prediction, 1), num_classes=n_classes)
 
             conf_matrix_eval, test_accuracy = sess.run([conf_matrix, accuracy])
+            conf_matrix_eval = conf_matrix_eval[permute, permute]
             with open(current_location + "/confMatrix{}.txt".format(epoch), 'w') as confMatrixOutput:
                 for line in conf_matrix_eval:
                     for word in line:
@@ -178,6 +193,7 @@ def test(train):
 
         for _ in tqdm(range(int(n/batch_size))):
             current_conf_matrix_eval = sess.run([conf_matrix])
+            current_conf_matrix_eval = current_conf_matrix_eval[0][permute, :][:, permute]
             conf_matrix_eval = np.add(conf_matrix_eval, np.asarray(current_conf_matrix_eval))
 
         with open(current_location + "/confMatrixTest.txt", 'w') as confMatrixOutput:
