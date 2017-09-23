@@ -23,7 +23,7 @@ beta = 0.009
 
 # 1280537 parameters
 # 2039567 parameters
-# 2224943 parameters
+# 2116303 parameters
 
 decode = ['7', 'a', 'F', 'I', '5', '4', 'M', 'R', 'B', 'd',
           'h', 'D', 'Z', 'W', 'H', 'K', 'J', 'N', 'O', 'X',
@@ -45,24 +45,24 @@ def convolutional_neural_network(data):
     data = tf.reshape(data, shape=[-1, 52, 52, 1], name='input')
 
     # conv_layer(data, filter_height, filter_width, in_channels, out_channels, strides, padding, layer_name)
-    conv1 = conv_layer(data, 5, 5, 1, 32, [1, 1, 1, 1], 'SAME', 'conv1')
+    conv1 = conv_layer(data, 5, 5, 1, 40, [1, 1, 1, 1], 'SAME', 'conv1')
     # max_pool_layer(data, ksize, strides, padding, layer_name)
-    conv1 = max_pool_layer(conv1, [1, 3, 3, 1], [1, 2, 2, 1], 'SAME', 'max_pool1')
+    conv1 = max_pool_layer(conv1, [1, 4, 4, 1], [1, 3, 3, 1], 'SAME', 'max_pool1')
 
-    conv2 = conv_layer(conv1, 5, 5, 32, 64, [1, 1, 1, 1], 'SAME', 'conv2')
+    conv2 = conv_layer(conv1, 5, 5, 40, 80, [1, 1, 1, 1], 'SAME', 'conv2')
     conv2 = max_pool_layer(conv2, [1, 3, 3, 1], [1, 2, 2, 1], 'SAME', 'max_pool2')
 
     #conv3 = conv_layer(conv2, 5, 5, 32, 32, [1,1,1,1], 'SAME', 'conv3')
     #conv3 = max_pool_layer(conv3, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME', 'max_pool3')
 
-    shape_dim = 13*13*64
+    shape_dim = 9*9*80
     fc1 = tf.reshape(conv2, shape=[-1, shape_dim], name='conv2_maxpool3')
-    fc1 = nn_layer(fc1, shape_dim, 200, 'fully_connected1', act=tf.nn.relu)
+    fc1 = nn_layer(fc1, shape_dim, 300, 'fully_connected1', act=tf.nn.relu)
     # fc2 = nn_layer(fc1, 1024, 128, 'fully_connected2')
 
     with tf.name_scope('output'):
         with tf.name_scope('output_weights'):
-            weights = tf.Variable(tf.random_normal([200, n_classes]), name='output' + 'weights')
+            weights = tf.Variable(tf.random_normal([300, n_classes]), name='output' + 'weights')
             variable_summaries(weights)
         with tf.name_scope('output_biases'):
             biases = tf.Variable(tf.random_normal([n_classes]), name='output' + 'biases')
@@ -76,6 +76,8 @@ def convolutional_neural_network(data):
 def main():
     print('Starting training.')
     x, y, num_examples = tfrecords_loader(n_classes, batch_size, hm_epochs)
+
+    global_step = tf.Variable(0, name='global_step', trainable=False)
 
     with tf.Session() as sess:
         prediction = convolutional_neural_network(x)
@@ -94,7 +96,7 @@ def main():
                 cost = tf.reduce_mean(cost + beta * (regularizer_fc + regularizer_fl))
             tf.summary.scalar('cross_entropy', cost)
             with tf.name_scope('train'):
-                optimizer = tf.train.AdamOptimizer(learning_rate=1e-6, epsilon=0.1).minimize(cost)  # using Adam Optimizer algorithm for reducing cost
+                optimizer = tf.train.AdamOptimizer().minimize(cost, global_step=global_step)  # using Adam Optimizer algorithm for reducing cost
             with tf.name_scope('accuracy'):
                 with tf.name_scope('correct_prediction'):
                     correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
@@ -129,14 +131,19 @@ def main():
                 if i % 5 == 0:
                     # summary, _, c = sess.run([merged, optimizer, cost], options=run_options,
                     #                          run_metadata=run_metadata)
-                    summary, _, c = sess.run([merged, optimizer, cost])
-                    train_writer.add_summary(summary, (epoch * n + i)/5)
-
+                    summary, _, c, step = sess.run([merged, optimizer, cost, global_step])
+                    train_writer.add_summary(summary, (epoch * n + i)/5 + 641)  # TODO ovo pratiti
+                    train_writer.add_session_log(tf.SessionLog(status=tf.SessionLog.START), global_step=step)
                     # Create the Timeline object, and write it to a json
                     # tl = timeline.Timeline(run_metadata.step_stats)
                     # ctf = tl.generate_chrome_trace_format()
                     # with open('timeline' + str(i) + '.json', 'w') as f:
                     #     f.write(ctf)
+                if i % 75 == 0 and i > 0:
+                    new_path = current_location + "/saves"
+                    if not os.path.exists(new_path):
+                        os.makedirs(new_path)
+                    saver.save(sess, new_path + "/model.ckpt")
                 else:
                     _, c = sess.run([optimizer, cost])
                 epoch_loss += c
@@ -157,7 +164,6 @@ def main():
             conf_matrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(prediction, 1), num_classes=n_classes)
 
             conf_matrix_eval, test_accuracy = sess.run([conf_matrix, accuracy])
-            conf_matrix_eval = conf_matrix_eval[0][permute, :][:, permute]
             with open(current_location + "/confMatrix{}.txt".format(epoch), 'w') as confMatrixOutput:
                 for line in conf_matrix_eval:
                     for word in line:

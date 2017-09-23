@@ -93,7 +93,8 @@ def read_and_decode_single_example(filename, hm_epochs):
     # this lets a user split up there dataset in multiple files to keep
     # size down
     filename_queue = tf.train.string_input_producer([filename],
-                                                    num_epochs=hm_epochs,)
+                                                    num_epochs=hm_epochs,
+                                                    shuffle=True)
     # Unlike the TFRecordWriter, the TFRecordReader is symbolic
     reader = tf.TFRecordReader()
     # One can read a single serialized example from a filename
@@ -138,13 +139,17 @@ def tfrecords_loader(n_classes, batch_size, hm_epochs, train=True):
 
             label = tf.one_hot(label, n_classes)
 
-            images_batch, labels_batch = tf.train.shuffle_batch([image, label], batch_size=batch_size, capacity=20000,
-                                                                min_after_dequeue=10000)
+            images_batch, labels_batch = tf.train.batch([image, label],
+                                                        batch_size=batch_size,
+                                                        capacity=2*batch_size,
+                                                        allow_smaller_final_batch=True)
             return images_batch, labels_batch, 731668
     else:
         label, image = read_and_decode_single_example("mnist_test.tfrecords", hm_epochs)
         label = tf.one_hot(label, n_classes)
-        images_batch, labels_batch = tf.train.batch([image, label], batch_size=batch_size, capacity=82587,
+        images_batch, labels_batch = tf.train.batch([image, label],
+                                                    batch_size=batch_size,
+                                                    capacity=82587,
                                                     allow_smaller_final_batch=True)
         return images_batch, labels_batch, 82587
 if __name__ == '__main__':
