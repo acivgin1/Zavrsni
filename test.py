@@ -132,7 +132,7 @@ def main():
                     # summary, _, c = sess.run([merged, optimizer, cost], options=run_options,
                     #                          run_metadata=run_metadata)
                     summary, _, c, step = sess.run([merged, optimizer, cost, global_step])
-                    train_writer.add_summary(summary, (epoch * n + i)/5 + 641)  # TODO ovo pratiti
+                    train_writer.add_summary(summary, (epoch * n + i)/5 + 641)
                     train_writer.add_session_log(tf.SessionLog(status=tf.SessionLog.START), global_step=step)
                     # Create the Timeline object, and write it to a json
                     # tl = timeline.Timeline(run_metadata.step_stats)
@@ -178,15 +178,15 @@ def main():
 
 def test(train):
     print('Starting testing and confusion matrix and accuracy evaluation.')
-    batch_size = 4096
+    batch_size = 2048
     hm_epochs = 1
     x, y, n = tfrecords_loader(n_classes, batch_size, hm_epochs, train=train)
     prediction = convolutional_neural_network(x)
 
     with tf.Session() as sess:
-        if os.path.isfile(current_location + "/saves/model.ckpt.meta"):
+        if os.path.isfile(current_location + "/saves/model09-24-19-08.ckpt.meta"):
             saver = tf.train.Saver()
-            saver.restore(sess, current_location + "/saves/model.ckpt")
+            saver.restore(sess, current_location + "/saves/model09-24-19-08.ckpt")
             print("Model restored.")
         else:
             print("Save missing.\nExiting...")
@@ -199,7 +199,7 @@ def test(train):
         conf_matrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(prediction, 1), num_classes=n_classes)
         conf_matrix_eval = np.zeros((1, 47, 47))
 
-        for _ in tqdm(range(int(n/batch_size))):
+        for _ in tqdm(range(int(n/batch_size)+1)):
             current_conf_matrix_eval = sess.run([conf_matrix])
             current_conf_matrix_eval = current_conf_matrix_eval[0][permute, :][:, permute]
             conf_matrix_eval = np.add(conf_matrix_eval, np.asarray(current_conf_matrix_eval))
